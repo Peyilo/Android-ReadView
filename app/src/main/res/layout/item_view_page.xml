@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/page_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:gravity="center"
+        android:textSize="11sp"
+        android:text="页眉"
+        android:lines="1"/>
+
+    <org.klee.readview.ContentView
+        android:id="@+id/page_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="10dp"
+        android:layout_below="@id/page_header"
+        android:layout_above="@id/page_footer"/>
+
+    <RelativeLayout
+        android:id="@+id/page_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:paddingHorizontal="30dp">
+        <TextClock
+            android:id="@+id/page_footer_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:textSize="11sp" />
+        <TextView
+            android:id="@+id/page_footer_process"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:textSize="11sp"
+            android:text="页脚"/>
+    </RelativeLayout>
+
+</RelativeLayout>

@@ -60,18 +60,6 @@ class ReadPage(context: Context, attributeSet: AttributeSet? = null)
         }
     }
 
-    fun upContent() {
-        content.postInvalidate()
-    }
-
-    fun upHeader() {
-        header!!.postInvalidate()
-    }
-
-    fun upFooter() {
-        footer!!.postInvalidate()
-    }
-
     companion object {
         const val NONE = -1
     }

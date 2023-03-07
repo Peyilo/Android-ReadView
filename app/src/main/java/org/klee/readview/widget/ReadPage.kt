@@ -1,4 +1,4 @@
-package org.klee.readview
+package org.klee.readview.widget
 
 import android.content.Context
 import android.util.AttributeSet
@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 
-private const val TAG = "ReadPage"
 class ReadPage(context: Context, attributeSet: AttributeSet? = null)
     : ViewGroup(context, attributeSet) {
 

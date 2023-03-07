@@ -8,5 +8,4 @@ class PageData (
     val chapTitle: String? = null
 ) {
     var bitmapCache: Bitmap? = null
-
 }

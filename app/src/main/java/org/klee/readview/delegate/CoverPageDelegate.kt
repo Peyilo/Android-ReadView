@@ -7,7 +7,7 @@ import android.graphics.Shader
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import org.klee.readview.BaseReadView
+import org.klee.readview.widget.ReadView
 import org.klee.readview.entities.PageDirection
 import kotlin.math.abs
 
@@ -16,7 +16,7 @@ private const val TAG = "CoverPageDelegate"
 /**
  * 覆盖翻页的实现
  */
-class CoverPageDelegate(baseReadView: BaseReadView) : PageDelegate(baseReadView) {
+class CoverPageDelegate(readView: ReadView) : PageDelegate(readView) {
 
     private var pageDirection = PageDirection.NONE
     private var scrolledView: View? = null

@@ -3,6 +3,8 @@ package org.klee.readview.config
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Typeface
+import org.klee.readview.page.DefaultPageFactory
+import org.klee.readview.page.IPageFactory
 
 /**
  * ContentView绘制参数配置
@@ -10,14 +12,30 @@ import android.graphics.Typeface
 object ContentConfig {
 
     // contentView的宽高
+    var contentDimenInitialized = false         // contentView的尺寸是否完成了初始化
+        private set
     var contentWidth = 0
         private set
     var contentHeight = 0
         private set
 
     fun setContentDimen(width: Int, height: Int) {
+        contentDimenInitialized = true
         contentWidth = width
         contentHeight = height
+    }
+
+    private var pageFactory: IPageFactory? = null
+
+    fun getPageFactory(): IPageFactory {
+        if (pageFactory == null) {
+            pageFactory = DefaultPageFactory()
+        }
+        return pageFactory!!
+    }
+
+    fun setPageFactory(pageFactory: IPageFactory) {
+        this.pageFactory = pageFactory
     }
 
     val textPaint: Paint by lazy { Paint() }

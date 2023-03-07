@@ -4,9 +4,9 @@ import android.content.Context
 import android.graphics.Canvas
 import android.view.MotionEvent
 import android.widget.Scroller
-import org.klee.readview.BaseReadView
+import org.klee.readview.widget.ReadView
 
-abstract class PageDelegate (val readView: BaseReadView) {
+abstract class PageDelegate (val readView: ReadView) {
 
     private val context: Context get() = readView.context
 

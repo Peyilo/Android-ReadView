@@ -1,4 +1,4 @@
-package org.klee.readview
+package org.klee.readview.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,19 +8,45 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import androidx.annotation.IntRange
+import org.klee.readview.api.BookLoader
+import org.klee.readview.config.ContentConfig
 import org.klee.readview.delegate.CoverPageDelegate
 import org.klee.readview.delegate.PageDelegate
+import org.klee.readview.entities.BookData
+import org.klee.readview.entities.ChapData
 import org.klee.readview.entities.PageDirection
+import java.util.concurrent.Executors
 import kotlin.math.abs
 
 /**
  * 负责提供多种翻页模式下的动画实现
  */
-class BaseReadView(context: Context, attributeSet: AttributeSet)
+class ReadView(context: Context, attributeSet: AttributeSet)
     : ViewGroup(context, attributeSet) {
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val scrollSlop = touchSlop
+
+    val pageFactory get() = ContentConfig.getPageFactory()
+
+    private lateinit var bookLoader: BookLoader
+    var book: BookData? = null
+    val chapCount: Int get() {              // 章节数
+        book?.let {
+            return book!!.chapCount
+        }
+        return 0
+    }
+
+    @IntRange(from = 1) var curChapIndex: Int = 1
+    @IntRange(from = 1) var curPageIndex: Int = 1
+
+    var preLoadBefore = 2   // 预加载当前章节之前的2章节
+    var preLoadBehind = 2   // 预加载当前章节之后的2章节
+
+
+    private val threadPool by lazy { Executors.newFixedThreadPool(10) }
 
     internal lateinit var curPageView: ReadPage
     internal lateinit var prePageView: ReadPage
@@ -132,14 +158,71 @@ class BaseReadView(context: Context, attributeSet: AttributeSet)
     fun hasPrevPage() = true
 
     internal fun updateChildView(convertView: ReadPage,
-                                 direction: PageDirection) : ReadPage {
+                                 direction: PageDirection
+    ) : ReadPage {
         return convertView
     }
+
+    fun getChapter(@IntRange(from = 1) chapIndex: Int) = book!!.getChapter(chapIndex)
 
     /**
      * 当章节目录完成初始化时的回调
      */
-    fun onTocInitialized() {}
+    fun onTocInitialized(book: BookData) {}
 
-    fun onChapInitialized() {}
+    fun onChapLoaded(chap: ChapData) {}
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        threadPool.shutdown()
+    }
+
+    private fun startTask(task: Runnable) {
+        threadPool.submit(task)
+    }
+
+    /**
+     * 根据指定的章节序号，生成需要加载的章节的序号列表
+     */
+    private fun getPreChapIndexList(chapIndex: Int): List<Int> {
+        val indexList = ArrayList<Int>()
+        indexList.add(chapIndex)
+        var i = chapIndex - 1
+        while (i > 0 && i >= chapIndex - preLoadBefore) {
+            indexList.add(i)
+            i--
+        }
+        i = chapIndex + 1
+        while (i <= chapCount && i <= chapIndex + preLoadBehind) {
+            indexList.add(i)
+            i++
+        }
+        return indexList
+    }
+
+    fun openBook(loader: BookLoader,
+                 @IntRange(from = 1) chapIndex: Int = 1,
+                 @IntRange(from = 1) pageIndex: Int = 1) {
+        this.bookLoader = loader
+        this.curChapIndex = chapIndex
+        this.curPageIndex = pageIndex
+        startTask {
+            val book = loader.loadBook()            // load toc
+            this.book = book
+            onTocInitialized(book)                  // callback function
+            val indexList = getPreChapIndexList(this.curChapIndex)
+            indexList.forEach {
+                val chap = getChapter(it)
+                loader.loadChapter(chap)
+                onChapLoaded(chap)
+            }
+            post {
+                // 完成分页
+                indexList.forEach {
+                    val chap = getChapter(it)
+                    pageFactory.splitPage(chap)
+                }
+            }
+        }
+    }
 }

@@ -14,7 +14,7 @@
         android:text="页眉"
         android:lines="1"/>
 
-    <org.klee.readview.ContentView
+    <org.klee.readview.widget.ContentView
         android:id="@+id/page_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

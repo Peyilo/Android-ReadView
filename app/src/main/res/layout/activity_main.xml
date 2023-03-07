@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".activity.MainActivity">
 
-    <org.klee.readview.BaseReadView
+    <org.klee.readview.widget.ReadView
         android:id="@+id/read_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

@@ -38,14 +38,14 @@ object ContentConfig {
         this.pageFactory = pageFactory
     }
 
-    val textPaint: Paint by lazy { Paint() }
+    val contentPaint: Paint by lazy { Paint() }
 
     val titlePaint: Paint by lazy { Paint().apply {
         typeface = Typeface.DEFAULT_BOLD
     } }
 
-    val textColor get() = textPaint.color
-    val textSize get() = textPaint.textSize
+    val contentColor get() = contentPaint.color
+    val contentSize get() = contentPaint.textSize
     val titleColor get() = titlePaint.color
     val titleSize get() = titlePaint.textSize
 

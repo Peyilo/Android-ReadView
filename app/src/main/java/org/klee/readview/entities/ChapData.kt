@@ -22,6 +22,9 @@ class ChapData (
     }
 
     fun clearPages() {
+        pageList.forEach {
+            it.bitmapCache?.recycle()
+        }
         pageList.clear()
     }
 

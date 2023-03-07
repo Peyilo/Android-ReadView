@@ -5,7 +5,29 @@ import android.graphics.Bitmap
 class PageData (
     val chapIndex: Int,
     val pageIndex: Int,
-    val chapTitle: String? = null
 ) {
     var bitmapCache: Bitmap? = null
+    private val titleLineList: ArrayList<String> by lazy { ArrayList() }
+    private val contentLineList: ArrayList<String> by lazy { ArrayList() }
+
+    fun addTitleLine(line: String) {
+        titleLineList.add(line)
+    }
+
+    /**
+     * lineIndex need larger than 0!
+     */
+    fun getTitleLine(lineIndex: Int) = titleLineList[lineIndex - 1]
+
+    fun addContentLine(line: String) {
+        contentLineList.add(line)
+    }
+
+    /**
+     * lineIndex need larger than 0!
+     */
+    fun getContentLine(lineIndex: Int) = contentLineList[lineIndex - 1]
+
+    val titleLineCount = titleLineList.size
+    val contentLineCount = contentLineList.size
 }

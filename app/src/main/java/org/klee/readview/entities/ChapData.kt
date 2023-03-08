@@ -15,7 +15,7 @@ class ChapData (
         ArrayList()
     }
 
-    val pageCount get() = pageList.size
+    val pageCount get() = pageList.size     // 完成加载之后，至少有一页（可能为空白页）
 
     fun addPage(pageData: PageData) {
         pageList.add(pageData)

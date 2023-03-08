@@ -26,20 +26,28 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     internal lateinit var prePageView: ReadPage
     internal lateinit var nextPageView: ReadPage
 
-    var shadowWidth: Int = 30
+    var shadowWidth: Int = 25
 
     private var isMove = false
     private var isPageMove = false
-    var longPress = false
 
     val startPoint by lazy { PointF() }         // 第一次DOWN事件的坐标
     val lastPoint by lazy { PointF() }          // 上一次触摸的坐标
     val touchPoint by lazy { PointF() }         // 当前触摸的坐标
 
-    var pageDelegate: PageDelegate = CoverPageDelegate(this)
+    private var pageDelegate0: PageDelegate? = null
+    private val pageDelegate: PageDelegate get() {
+        if (pageDelegate0 == null) {
+            pageDelegate0 = CoverPageDelegate(this)
+        }
+        return pageDelegate0!!
+    }
+    fun setPageDelegate(pageDelegate: PageDelegate) {
+        this.pageDelegate0 = pageDelegate
+    }
 
     // 初始化ReadPage
-    fun initPage(initializer: (readPage: ReadPage, position: Int) -> Unit) {
+    open fun initPage(initializer: (readPage: ReadPage, position: Int) -> Unit) {
         curPageView = ReadPage(context)
         prePageView = ReadPage(context)
         nextPageView = ReadPage(context)
@@ -55,7 +63,6 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
         setMeasuredDimension(widthSize, heightSize)
-        require(childCount == 3)
         // 设置子view的测量大小
         for (i in 0 until childCount) {
             val child = getChildAt(i)
@@ -103,7 +110,6 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                     isPageMove = abs(startPoint.x - event.x) > scrollSlop || abs(startPoint.x - event.y) > scrollSlop
                 }
                 if (isMove) {
-                    // longPress = false
                     if (isPageMove) {
                         pageDelegate.onTouch(event)
                     }
@@ -132,6 +138,22 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
 
     open fun hasPrevPage(): Boolean = true
 
-    internal open fun updateChildView(convertView: ReadPage, direction: PageDirection) = convertView
+    open fun onFlipToPrev() = Unit
+
+    open fun onFlipToNext() = Unit
+
+    /**
+     * 翻页完成以后，将会调用该函数进行子视图更新
+     */
+    internal open fun updateChildView(convertView: ReadPage,
+                                      direction: PageDirection): ReadPage {
+        if (direction == PageDirection.PREV) {
+            onFlipToPrev()
+        }
+        if (direction == PageDirection.NEXT) {
+            onFlipToNext()
+        }
+        return convertView
+    }
 
 }

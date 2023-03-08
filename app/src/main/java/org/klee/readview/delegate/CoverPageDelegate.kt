@@ -21,7 +21,7 @@ class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
     private var pageDirection = PageDirection.NONE
     private var scrolledView: View? = null
 
-    private val minFlipDistance = 0
+    private val minFlipDistance = 40
 
     private val shadowPaint: Paint = Paint()
     private val gradientColors = intArrayOf(-0x71000000, 0x00000000)

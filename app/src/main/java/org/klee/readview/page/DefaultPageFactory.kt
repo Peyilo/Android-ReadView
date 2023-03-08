@@ -98,7 +98,9 @@ class DefaultPageFactory: IPageFactory {
                 base += ContentConfig.lineMargin
             }
         }
-        base += ContentConfig.titleMargin
+        if (pageData.titleLineCount != 0) {
+            base += ContentConfig.titleMargin
+        }
         // 绘制正文内容
         for (i in 1..pageData.contentLineCount) {
             val content = pageData.getContentLine(i)

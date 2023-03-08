@@ -12,6 +12,12 @@ class ContentView(context: Context, attributeSet: AttributeSet? = null)
     : View(context, attributeSet) {
 
     var content: Bitmap? = null
+        set(value) {
+            if (field != null) {            // 回收之前的
+                field!!.recycle()
+            }
+            field = value
+        }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)

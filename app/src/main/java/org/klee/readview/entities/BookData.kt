@@ -13,6 +13,9 @@ class BookData (
         ArrayList()
     }
     val chapCount get() = chapList.size         // 章节数
+
+    fun isEmpty() = chapCount == 0              // 是否为空
+
     // 添加章节
     fun addChapter(chapData: ChapData) {
         chapList.add(chapData)

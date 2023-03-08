@@ -48,6 +48,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     private val threadPool by lazy { Executors.newFixedThreadPool(10) }
 
+    /**
+     * 对外提供的ReadPage自定义API函数，可以通过该函数配置ReadPage的内容视图、页眉视图、页脚视图
+     * @param initializer 初始化器
+     */
     override fun initPage(initializer: (readPage: ReadPage, position: Int) -> Unit) {
         super.initPage(initializer)
         beforeInit()
@@ -134,6 +138,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
      */
     private fun loadBook(): BookData {
         book = bookLoader.loadBook()
+        Log.d(TAG, "loadBook: book initialized")
         callback?.onTocInitialized(book!!)                      // callback function
         return book!!
     }

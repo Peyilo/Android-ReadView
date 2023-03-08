@@ -9,7 +9,14 @@ import org.klee.readview.entities.PageData
 
 class DefaultPageFactory: IPageFactory {
 
-    override var breaker: IBreaker = DefaultBreaker()
+    private val remainedWidth get() = ContentConfig.contentWidth -
+            ContentConfig.contentPaddingLeft - ContentConfig.contentPaddingRight
+    private val remainedHeight get() = ContentConfig.contentHeight -
+            ContentConfig.contentPaddingTop - ContentConfig.contentPaddingBottom
+    private val startLeft get() = ContentConfig.contentPaddingLeft
+    private val startTop get() = ContentConfig.contentPaddingTop
+
+    private var breaker: IBreaker = DefaultBreaker()
     private val canvas by lazy { Canvas() }     // 避免多次创建Canvas对象
 
     override fun splitPage(chapData: ChapData): Boolean {
@@ -26,7 +33,7 @@ class DefaultPageFactory: IPageFactory {
         var curPageIndex = 1
         var page = PageData(chapIndex, curPageIndex)
         // 切割标题
-        val titleLines = breaker.breakLines(chapData.title, width.toFloat(), ContentConfig.titlePaint)
+        val titleLines = breaker.breakLines(chapData.title, width, ContentConfig.titlePaint)
         titleLines.forEach {
             page.addTitleLine(it)
         }
@@ -88,12 +95,13 @@ class DefaultPageFactory: IPageFactory {
     private fun drawPage(pageData: PageData, canvas: Canvas) {
         val contentPaint = ContentConfig.contentPaint
         val titlePaint = ContentConfig.titlePaint
-        var base = 0F
+        var base = startTop
+        val left = startLeft
         // 绘制标题
         for (i in 1..pageData.titleLineCount) {
             val title = pageData.getTitleLine(i)
             base += ContentConfig.titleSize
-            canvas.drawText(title, 0F, base, titlePaint)
+            canvas.drawText(title, left, base, titlePaint)
             if (i != pageData.titleLineCount) {     // 不是最后一行，需要处理额外的行间距
                 base += ContentConfig.lineMargin
             }
@@ -106,9 +114,9 @@ class DefaultPageFactory: IPageFactory {
             val content = pageData.getContentLine(i)
             base += ContentConfig.contentSize
             if (content.isFirst) {
-                canvas.drawText(content.line, ContentConfig.lineOffset, base, contentPaint)
+                canvas.drawText(content.line, ContentConfig.lineOffset + left, base, contentPaint)
             } else {
-                canvas.drawText(content.line, 0F, base, contentPaint)
+                canvas.drawText(content.line, left, base, contentPaint)
             }
             base += ContentConfig.lineMargin
             if (i != pageData.contentLineCount && content.isLast) {     // 处理段落之间的间距

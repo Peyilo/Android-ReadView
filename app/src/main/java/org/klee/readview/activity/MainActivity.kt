@@ -29,6 +29,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext, "视图初始化完成！", Toast.LENGTH_SHORT).show()
             }
         }
-        readView.openBook(SfacgLoader(591785))
+        readView.openBook(SfacgLoader(591785), 10, 2)
     }
 }

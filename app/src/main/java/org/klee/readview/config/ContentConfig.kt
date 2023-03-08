@@ -20,6 +20,12 @@ object ContentConfig {
     var contentHeight = 0
         private set
 
+    /*******- contentView的padding参数 -********/
+    var contentPaddingLeft = 30F
+    var contentPaddingRight = 30F
+    var contentPaddingTop = 20F
+    var contentPaddingBottom = 20F
+
     fun setContentDimen(width: Int, height: Int) {
         contentDimenInitialized = true
         contentWidth = width

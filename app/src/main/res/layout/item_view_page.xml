@@ -11,6 +11,7 @@
         android:layout_alignParentTop="true"
         android:gravity="center"
         android:textSize="11sp"
+        android:textColor="@color/black"
         android:text="页眉"
         android:lines="1"/>
 
@@ -21,7 +22,11 @@
         android:paddingVertical="8dp"
         android:paddingHorizontal="10dp"
         android:layout_below="@id/page_header"
-        android:layout_above="@id/page_footer"/>
+        android:layout_above="@id/page_footer"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"/>
 
     <RelativeLayout
         android:id="@+id/page_footer"
@@ -35,6 +40,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
+            android:textColor="@color/black"
             android:textSize="11sp" />
         <TextView
             android:id="@+id/page_footer_process"
@@ -42,6 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:textSize="11sp"
+            android:textColor="@color/black"
             android:text="页脚"/>
     </RelativeLayout>
 

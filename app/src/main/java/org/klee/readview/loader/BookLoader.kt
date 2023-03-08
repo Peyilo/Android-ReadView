@@ -1,4 +1,4 @@
-package org.klee.readview.api
+package org.klee.readview.loader
 
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData

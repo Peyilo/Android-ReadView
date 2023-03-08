@@ -1,24 +1,20 @@
 package org.klee.readview.activity
 
-import android.graphics.Color
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import org.klee.readview.R
-import org.klee.readview.widget.BaseReadView
+import org.klee.readview.loader.SfacgLoader
+import org.klee.readview.widget.ReadView
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         supportActionBar?.hide()
-        val readView = findViewById<BaseReadView>(R.id.read_view)
-        readView.initPage { readPage, position ->
+        val readView = findViewById<ReadView>(R.id.read_view)
+        readView.initPage { readPage, _ ->
             readPage.initLayout(R.layout.item_view_page, R.id.page_content)
-            when (position) {
-                 0  -> readPage.content.setBackgroundColor(Color.RED)
-                 1  -> readPage.content.setBackgroundColor(Color.BLUE)
-                -1  -> readPage.content.setBackgroundColor(Color.GREEN)
-            }
         }
+        readView.openBook(SfacgLoader(591785))
     }
 }

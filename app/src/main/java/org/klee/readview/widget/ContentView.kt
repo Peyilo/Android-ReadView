@@ -3,6 +3,7 @@ package org.klee.readview.widget
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import org.klee.readview.config.ContentConfig
@@ -20,10 +21,11 @@ class ContentView(context: Context, attributeSet: AttributeSet? = null)
         }
     }
 
+    private val paint = Paint()
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         content?.let {
-            canvas?.drawBitmap(content!!, 0F, 0F, null)
+            canvas?.drawBitmap(content!!, 0F, 0F, paint)
         }
     }
 }

@@ -2,8 +2,9 @@ package org.klee.readview.widget
 
 import android.content.Context
 import android.util.AttributeSet
+import android.widget.Toast
 import androidx.annotation.IntRange
-import org.klee.readview.api.BookLoader
+import org.klee.readview.loader.BookLoader
 import org.klee.readview.config.ContentConfig
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
@@ -37,7 +38,14 @@ class ReadView(context: Context, attributeSet: AttributeSet?)
     /**
      * 当章节目录完成初始化时的回调
      */
-    private fun onTocInitialized(book: BookData) {}
+    private fun onTocInitialized() {}
+
+    /**
+     * 当章节目录完成初始化、章节内容完成加载以及分页、刷新视图以后，会回调该函数
+     */
+    private fun onInitialized() {
+        Toast.makeText(context, "加载完成！", Toast.LENGTH_SHORT).show()
+    }
 
     private fun onChapLoaded(chap: ChapData) {}
 
@@ -51,12 +59,14 @@ class ReadView(context: Context, attributeSet: AttributeSet?)
     }
 
     override fun hasNextPage(): Boolean {
-        if (book == null) return false
+        /*if (book == null) return false
+        return true*/
         return true
     }
 
     override fun hasPrevPage(): Boolean {
-        if (book == null) return false
+        /*if (book == null) return false
+        return true*/
         return true
     }
 
@@ -88,7 +98,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?)
         startTask {
             val book = loader.loadBook()            // load toc
             this.book = book
-            onTocInitialized(book)                  // callback function
+            onTocInitialized()                  // callback function
             val indexList = getPreloadIndexList(this.curChapIndex)
             indexList.forEach {
                 val chap = getChapter(it)
@@ -101,8 +111,22 @@ class ReadView(context: Context, attributeSet: AttributeSet?)
                     val chap = getChapter(it)
                     pageFactory.splitPage(chap)
                 }
+                refreshPages()
+                onInitialized()
             }
         }
+    }
+
+    /**
+     * 刷新当前三个ReadPage
+     */
+    private fun refreshPages() {
+        curPageView.setContent(pageFactory.createPage(
+            getChapter(curChapIndex).getPage(curPageIndex)
+        ))
+        nextPageView.setContent(pageFactory.createPage(
+            getChapter(curChapIndex).getPage(curPageIndex + 1)
+        ))
     }
 
 }

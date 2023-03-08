@@ -8,7 +8,7 @@ class PageData (
 ) {
     var bitmapCache: Bitmap? = null
     private val titleLineList: ArrayList<String> by lazy { ArrayList() }
-    private val contentLineList: ArrayList<String> by lazy { ArrayList() }
+    private val contentLineList: ArrayList<LineData> by lazy { ArrayList() }
 
     fun addTitleLine(line: String) {
         titleLineList.add(line)
@@ -19,7 +19,7 @@ class PageData (
      */
     fun getTitleLine(lineIndex: Int) = titleLineList[lineIndex - 1]
 
-    fun addContentLine(line: String) {
+    fun addContentLine(line: LineData) {
         contentLineList.add(line)
     }
 
@@ -28,6 +28,6 @@ class PageData (
      */
     fun getContentLine(lineIndex: Int) = contentLineList[lineIndex - 1]
 
-    val titleLineCount = titleLineList.size
-    val contentLineCount = contentLineList.size
+    val titleLineCount get() =  titleLineList.size
+    val contentLineCount get() =  contentLineList.size
 }

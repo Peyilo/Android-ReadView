@@ -1,6 +1,8 @@
 package org.klee.readview.widget
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.os.Looper
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -61,5 +63,14 @@ class ReadPage(context: Context, attributeSet: AttributeSet? = null)
 
     companion object {
         const val NONE = -1
+    }
+
+    fun setContent(bitmap: Bitmap) {
+        content.content = bitmap
+        if (Looper.getMainLooper().isCurrentThread) {
+            content.invalidate()        // 如果当前为主线程，就直接调用invalidate()进行刷新
+        } else {
+            content.postInvalidate()
+        }
     }
 }

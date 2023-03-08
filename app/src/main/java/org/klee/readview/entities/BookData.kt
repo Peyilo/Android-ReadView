@@ -6,8 +6,8 @@ import androidx.annotation.IntRange
  * 书籍数据
  */
 class BookData (
-    var name: String,                           // 书籍名称
-    var author: String,                         // 作者名
+    var name: String = "",                           // 书籍名称
+    var author: String = "",                         // 作者名
 ) : AdditionalData() {
     private val chapList: MutableList<ChapData> by lazy {
         ArrayList()

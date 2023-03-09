@@ -13,7 +13,7 @@ class ContentView(context: Context, attributeSet: AttributeSet? = null)
 
     var content: Bitmap? = null
         set(value) {
-            if (field != null) {            // 回收之前的
+            if (field != null && !field!!.isRecycled) {  // 回收bitmap
                 field!!.recycle()
             }
             field = value
@@ -31,7 +31,9 @@ class ContentView(context: Context, attributeSet: AttributeSet? = null)
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         content?.let {
-            canvas?.drawBitmap(content!!, 0F, 0F, paint)
+            if (!content!!.isRecycled) {
+                canvas?.drawBitmap(content!!, 0F, 0F, paint)
+            }
         }
     }
 }

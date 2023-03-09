@@ -83,7 +83,7 @@ class DefaultPageFactory: IPageFactory {
         return true
     }
 
-    override fun createPage(pageData: PageData): Bitmap {
+    override fun createPageBitmap(pageData: PageData): Bitmap {
         // 在背景上绘制文字
         val page = ContentConfig.getBgBitmap()
         canvas.setBitmap(page)

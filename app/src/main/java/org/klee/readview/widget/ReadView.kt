@@ -373,6 +373,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     /**
      * 创建一个处于加载中的PageData
+     * TODO: 通过为PageData设置一个bitmapCache实现
      */
     private fun createLoadingPage(chapIndex: Int, chapTitle: String): PageData {
         val tempChap = ChapData(chapIndex, chapTitle, "正在加载中...")
@@ -448,7 +449,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             }
         }
         if (bitmap == null) {
-            bitmap = pageFactory.createPage(pageData)
+            bitmap = pageFactory.createPageBitmap(pageData)
             onBitmapCreate(bitmap)
             pageData.bitmapCache = bitmap
         }

@@ -23,51 +23,18 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private val threadPool by lazy { Executors.newFixedThreadPool(10) }
     private val readData by lazy { ReadData() }
 
-    private val book: BookData get() = readData.book!!
-    private val chapCount get() = readData.chapCount
-    private val curChapIndex get() = readData.curChapIndex
-    private val curPageIndex get() = readData.curPageIndex
+    val book: BookData get() = readData.book!!
+    val chapCount get() = readData.chapCount
+    val curChapIndex get() = readData.curChapIndex
+    val curPageIndex get() = readData.curPageIndex
 
-    var callback: Callback? = null
+    private val callback: Callback? get() = readData.callback
 
     private var initView: View? = null
     private var initFinished = false
 
-    /**
-     * 对外提供的ReadPage自定义API函数，可以通过该函数配置ReadPage的内容视图、页眉视图、页脚视图
-     * @param initializer 初始化器
-     */
-    override fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
-        super.initPage(initializer)
-        beforeInit()
-    }
-
-    private fun createInitView() {
-        initView = TextView(context).apply {
-            gravity = Gravity.CENTER
-            text = "加载中..."
-            textSize = 18F
-        }
-    }
-
-    private fun beforeInit() {
-        if (initView == null) {         // 配置初始化视图
-            createInitView()
-        }
-        addView(initView!!)
-        curPageView.invisible()         // 设置为不可见
-        prePageView.invisible()
-        nextPageView.invisible()
-    }
-
-    // 当目录加载完，需要显示出
-    private fun afterInit() {
-        curPageView.visible()
-        prePageView.visible()
-        nextPageView.visible()
-        removeView(initView)
-        initView = null
-        initFinished = true
+    fun setCallback(callback: Callback) {
+        readData.callback = callback
     }
 
     override fun onDetachedFromWindow() {
@@ -81,7 +48,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     override fun hasNextPage(): Boolean {
         if (!initFinished || chapCount == 0) return false
-        if (curChapIndex == chapCount) {    // 最后一章节
+        if (!readData.hasNextChap()) {    // 最后一章节
             val chapter = readData.getChap(curChapIndex)
             return when (chapter.status) {
                 ChapterStatus.FINISHED -> {
@@ -95,7 +62,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     override fun hasPrevPage(): Boolean {
         if (!initFinished || chapCount == 0) return false
-        if (curChapIndex == 1) {        // 第一章节
+        if (!readData.hasPreChap()) {        // 没有上一章
             val chapter = readData.getChap(curChapIndex)
             return when (chapter.status) {
                 ChapterStatus.FINISHED -> {
@@ -105,15 +72,6 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             }
         }
         return true
-    }
-
-    /**
-     * 代理bookLoader的方法，实现回调
-     */
-    private fun initBook() {
-        readData.loadBook()
-        Log.d(TAG, "loadBook: book initialized")
-        callback?.onTocInitialized(book)                      // callback function
     }
 
     private fun onChapterChange(oldChapIndex: Int, newChapIndex: Int) {
@@ -154,7 +112,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             }
         }
         if (direction == PageDirection.PREV) {
-            if (readData.hasPreChap()) {
+            if (hasPrevPage()) {
                 pageData = readData.getPrevPage()
             }
         }
@@ -183,8 +141,45 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
                 requestLoadChapters(chapIndex)
                 requestSplitChapters(chapIndex)
             }
-            refreshAllPage()
+            selectRefresh(chapIndex, pageIndex)
         }
+    }
+
+    /**
+     * 创建一个在目录加载完成之前显示的视图
+     */
+    private fun createInitView() {
+        initView = TextView(context).apply {
+            gravity = Gravity.CENTER
+            text = "加载中..."
+            textSize = 18F
+        }
+    }
+
+    /**
+     * 做好加载目录的准备工作，如禁止视图滑动，显示“加载中”视图
+     */
+    private fun prepareInit() {
+        initFinished = false
+        if (initView == null) {         // 配置初始化视图
+            createInitView()
+        }
+        addView(initView!!)
+        curPageView.invisible()         // 设置为不可见
+        prePageView.invisible()
+        nextPageView.invisible()
+    }
+
+    /**
+     * 当目录加载完，需要调用该函数显示章节内容
+     */
+    private fun afterInit() {
+        curPageView.visible()
+        prePageView.visible()
+        nextPageView.visible()
+        removeView(initView)
+        initView = null
+        initFinished = true
     }
 
     /**
@@ -197,16 +192,17 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     ) {
         readData.bookLoader = loader
         readData.setProcess(chapIndex, pageIndex)
+        prepareInit()
         startTask {
-            initBook()                                   // load toc
+            readData.loadBook()        // load toc
             post {
                 afterInit()
-                refreshAllPage()
+                refreshAllPages()
             }
             readData.requestLoadChapters(chapIndex, alwaysLoad = true)
             post {
                 readData.requestSplitChapters(chapIndex)
-                refreshAllPage()
+                refreshAllPages()
                 callback?.onInitialized(this.book)
             }
         }
@@ -284,19 +280,22 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
+     * 根据对比当前章节序号、当前页码序号进行有选择的刷新
+     */
+    private fun selectRefresh(chapIndex: Int, pageIndex: Int = 1) {
+        refreshAllPages()
+    }
+
+    /**
      * 刷新所有ReadPage视图
      */
-    private fun refreshAllPage() {
+    private fun refreshAllPages() {
         refreshCurPage()
         refreshNextPage()
         refreshPrevPage()
     }
 
     interface Callback {
-        /**
-         * 在子线程加载章节完成的回调
-         */
-        fun onLoadChap(chap: ChapData) = Unit
 
         /**
          * 当章节目录完成初始化时的回调
@@ -309,6 +308,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
          * 该方法会在主线程执行
          */
         fun onInitialized(book: BookData) = Unit
+
+        /**
+         * 加载章节完成的回调，注意：该函数处于子线程中
+         * @param success 是否加载成功
+         */
+        fun onLoadChap(chap: ChapData, success: Boolean) = Unit
 
         fun onUpdatePage(chap: ChapData, pageIndex: Int) = Unit
     }

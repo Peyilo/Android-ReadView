@@ -46,8 +46,11 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
         this.pageDelegate0 = pageDelegate
     }
 
-    // 初始化ReadPage
-    open fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
+    /**
+     * 对外提供的ReadPage自定义API函数，可以通过该函数配置PageView的内容视图、页眉视图、页脚视图
+     * @param initializer 初始化器
+     */
+    fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
         curPageView = PageView(context)
         prePageView = PageView(context)
         nextPageView = PageView(context)

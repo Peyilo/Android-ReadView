@@ -2,8 +2,8 @@ package org.klee.readview.activity
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.klee.readview.R
@@ -12,6 +12,7 @@ import org.klee.readview.entities.ChapData
 import org.klee.readview.loader.SfacgLoader
 import org.klee.readview.widget.ReadView
 
+private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,16 +28,21 @@ class MainActivity : AppCompatActivity() {
         readView.initPage { readPage, _ ->
             readPage.initLayout(R.layout.item_view_page, R.id.page_content)
         }
-        readView.callback = object : ReadView.Callback {
+        readView.setCallback(object : ReadView.Callback {
             override fun onTocInitialized(book: BookData) {
                 readView.post {
                     Toast.makeText(applicationContext, "章节目录初始化完成！", Toast.LENGTH_SHORT).show()
                 }
             }
             override fun onInitialized(book: BookData) {
-                Toast.makeText(applicationContext, "视图初始化完成！", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, "分页完成！", Toast.LENGTH_SHORT).show()
             }
-        }
-        readView.openBook(SfacgLoader(591785), 10, 1)
+
+            override fun onLoadChap(chap: ChapData, success: Boolean) {
+                Log.d(TAG, "onLoadChap: chapter ${chap.chapIndex} " +
+                        "load ${if (success) "success" else "fail"}")
+            }
+        })
+        readView.openBook(SfacgLoader(591785), 10)
     }
 }

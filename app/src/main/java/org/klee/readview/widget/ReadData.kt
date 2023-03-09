@@ -16,6 +16,8 @@ import org.klee.readview.loader.BookLoader
 private const val TAG = "DataSource"
 class ReadData {
 
+    var callback: ReadView.Callback? = null
+
     var book: BookData? = null
     lateinit var bookLoader: BookLoader
     private val pageFactory get() = ContentConfig.getPageFactory()
@@ -26,8 +28,8 @@ class ReadData {
     @IntRange(from = 1)
     var curPageIndex: Int = 1
         private set
-    private var preLoadBefore = 2   // 预加载当前章节之前的2章节
-    private var preLoadBehind = 2   // 预加载当前章节之后的2章节
+    private var preLoadBefore = 1   // 预加载当前章节之前的章节
+    private var preLoadBehind = 1   // 预加载当前章节之后的章节
 
     val chapCount: Int
         get() {              // 章节数
@@ -54,6 +56,7 @@ class ReadData {
 
     fun loadBook() {
         book = bookLoader.loadBook()
+        callback?.onTocInitialized(book!!)
     }
 
     fun hasNextChap(): Boolean {
@@ -66,7 +69,7 @@ class ReadData {
         return curChapIndex != 1
     }
 
-    fun moveToPrevPage() {
+    @Synchronized fun moveToPrevPage() {
         val curChap = getChap(curChapIndex)
         if (curChap.status == ChapterStatus.FINISHED && curPageIndex > 1) {
             curPageIndex--
@@ -81,7 +84,7 @@ class ReadData {
         }
     }
 
-    fun moveToNextPage() {
+    @Synchronized fun moveToNextPage() {
         val curChap = getChap(curChapIndex)
         if (curChap.status == ChapterStatus.FINISHED && curPageIndex < curChap.pageCount) {
             curPageIndex++
@@ -145,10 +148,10 @@ class ReadData {
                 try {
                     bookLoader.loadChapter(chap)
                     chap.status = ChapterStatus.NO_SPLIT
-                    Log.d(TAG, "loadChapter: chapter ${chap.chapIndex} success")
+                    callback?.onLoadChap(chap, true)
                 } catch (e: Exception) {
                     chap.status = ChapterStatus.NO_LOAD
-                    Log.e(TAG, "loadChapter: chapter ${chap.chapIndex} fail")
+                    callback?.onLoadChap(chap, false)
                 }
             }
         }
@@ -186,7 +189,7 @@ class ReadData {
     /**
      * 根据给定的PageData对象获取其相应的bitmap对象
      */
-    fun getPageBitmap(pageData: PageData, callback: ((bitmap: Bitmap) -> Unit)? = null): Bitmap {
+    fun getPageBitmap(pageData: PageData): Bitmap {
         var bitmap: Bitmap? = null
         if (pageData.bitmapCache != null) {     // 先检查是否有缓存bitmap
             if (pageData.bitmapCache!!.isRecycled) {
@@ -197,7 +200,6 @@ class ReadData {
         }
         if (bitmap == null) {
             bitmap = pageFactory.createPageBitmap(pageData)
-            callback?.let { it(bitmap) }
             pageData.bitmapCache = bitmap
         }
         return bitmap

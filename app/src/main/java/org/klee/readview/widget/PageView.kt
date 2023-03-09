@@ -9,10 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
-import org.klee.readview.delegate.CoverPageDelegate
-import org.klee.readview.delegate.PageDelegate
 
-class ReadPage(context: Context, attributeSet: AttributeSet? = null)
+class PageView(context: Context, attributeSet: AttributeSet? = null)
     : ViewGroup(context, attributeSet) {
 
     lateinit var layout: View

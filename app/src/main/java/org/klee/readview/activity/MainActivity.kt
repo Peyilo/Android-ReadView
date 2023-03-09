@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.klee.readview.R
 import org.klee.readview.entities.BookData
+import org.klee.readview.entities.ChapData
 import org.klee.readview.loader.SfacgLoader
 import org.klee.readview.widget.ReadView
 
@@ -36,6 +37,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext, "视图初始化完成！", Toast.LENGTH_SHORT).show()
             }
         }
-        readView.openBook(SfacgLoader(591785), 10, 2)
+        readView.openBook(SfacgLoader(591785), 10, 1)
     }
 }

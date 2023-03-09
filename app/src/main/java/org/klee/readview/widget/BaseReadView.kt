@@ -22,9 +22,9 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val scrollSlop = touchSlop
 
-    internal lateinit var curPageView: ReadPage
-    internal lateinit var prePageView: ReadPage
-    internal lateinit var nextPageView: ReadPage
+    internal lateinit var curPageView: PageView
+    internal lateinit var prePageView: PageView
+    internal lateinit var nextPageView: PageView
 
     var shadowWidth: Int = 25
 
@@ -47,10 +47,10 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     }
 
     // 初始化ReadPage
-    open fun initPage(initializer: (readPage: ReadPage, position: Int) -> Unit) {
-        curPageView = ReadPage(context)
-        prePageView = ReadPage(context)
-        nextPageView = ReadPage(context)
+    open fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
+        curPageView = PageView(context)
+        prePageView = PageView(context)
+        nextPageView = PageView(context)
         initializer(curPageView, 0)
         initializer(prePageView, -1)
         initializer(nextPageView, 1)
@@ -145,8 +145,8 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     /**
      * 翻页完成以后，将会调用该函数进行子视图更新
      */
-    internal open fun updateChildView(convertView: ReadPage,
-                                      direction: PageDirection): ReadPage {
+    internal open fun updateChildView(convertView: PageView,
+                                      direction: PageDirection): PageView {
         if (direction == PageDirection.PREV) {
             onFlipToPrev()
         }

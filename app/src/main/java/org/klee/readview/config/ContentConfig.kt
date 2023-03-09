@@ -56,10 +56,17 @@ object ContentConfig {
         color = Color.BLACK
     } }
 
+    val loadingPaint by lazy { Paint().apply {
+        textSize = 45F
+        color = Color.parseColor("#292929")
+    } }
+
     val contentColor get() = contentPaint.color
     val contentSize get() = contentPaint.textSize
     val titleColor get() = titlePaint.color
     val titleSize get() = titlePaint.textSize
+    val loadingSize get() = loadingPaint.textSize
+    val loadingColor get() = loadingPaint.color
 
     /************** - contentView内部尺寸参数 - *****************/
     val lineOffset get() = contentPaint.measureText("来自") // 段落首行的偏移

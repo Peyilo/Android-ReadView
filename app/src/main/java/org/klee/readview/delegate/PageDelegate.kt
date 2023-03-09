@@ -3,6 +3,8 @@ package org.klee.readview.delegate
 import android.content.Context
 import android.graphics.Canvas
 import android.view.MotionEvent
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.Scroller
 import org.klee.readview.widget.BaseReadView
 

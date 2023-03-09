@@ -4,13 +4,8 @@ import android.graphics.Paint
 
 class DefaultBreaker: IBreaker {
 
-    // 避免函数多次调用时不断创建ArrayList对象
-    private val paras: MutableList<String> = ArrayList()
-    private val lines: MutableList<String> = ArrayList()
-    private val stringBuilder = StringBuilder()
-
-    override fun breakParas(content: String): List<String> {
-        paras.clear()
+    @Synchronized override fun breakParas(content: String): List<String> {
+        val paras = ArrayList<String>()
         val splits = content.split("\n")
         splits.forEach {
             val trim = it.trim()
@@ -26,7 +21,8 @@ class DefaultBreaker: IBreaker {
         width: Float, paint: Paint,
         textMargin: Float, offset: Float
     ): List<String> {
-        lines.clear()
+        val lines = ArrayList<String>()
+        val stringBuilder = StringBuilder()
         var w = width - offset
         var dimen: Float
         para.forEach {
@@ -47,8 +43,4 @@ class DefaultBreaker: IBreaker {
         return lines
     }
 
-    override fun recycle() {
-        paras.clear()
-        lines.clear()
-    }
 }

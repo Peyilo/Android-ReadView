@@ -17,7 +17,8 @@ class DefaultPageFactory: IPageFactory {
     private val startTop get() = ContentConfig.contentPaddingTop
 
     private var breaker: IBreaker = DefaultBreaker()
-    private val canvas by lazy { Canvas() }     // 避免多次创建Canvas对象
+    private val pageCanvas by lazy { Canvas() }     // 避免多次创建Canvas对象
+    private val loadingCanvas by lazy { Canvas() }
 
     override fun splitPage(chapData: ChapData): Boolean {
         // 如果留给绘制内容的空间不足以绘制标题或者正文的一行，直接返回false
@@ -54,7 +55,7 @@ class DefaultPageFactory: IPageFactory {
         // 开始正文内容的处理
         val paras = breaker.breakParas(content)
         paras.forEach { para ->
-            val breakLines = breaker.breakLines(para, width.toFloat(),
+            val breakLines = breaker.breakLines(para, width,
                 paint = ContentConfig.contentPaint,
                 textMargin = ContentConfig.textMargin,
                 offset = ContentConfig.lineOffset)
@@ -83,12 +84,12 @@ class DefaultPageFactory: IPageFactory {
         return true
     }
 
-    override fun createPageBitmap(pageData: PageData): Bitmap {
+    @Synchronized override fun createPageBitmap(pageData: PageData): Bitmap {
         // 在背景上绘制文字
         val page = ContentConfig.getBgBitmap()
-        canvas.setBitmap(page)
-        drawPage(pageData, canvas)
-        canvas.setBitmap(null)
+        pageCanvas.setBitmap(page)
+        drawPage(pageData, pageCanvas)
+        pageCanvas.setBitmap(null)
         return page
     }
 
@@ -123,5 +124,24 @@ class DefaultPageFactory: IPageFactory {
                 base += ContentConfig.paraMargin
             }
         }
+    }
+
+    /**
+     * 绘制加载界面
+     */
+    @Synchronized override fun createLoadingBitmap(title: String, msg: String): Bitmap {
+        val bitmap = ContentConfig.getBgBitmap()
+        loadingCanvas.setBitmap(bitmap)
+        val paint = ContentConfig.loadingPaint
+        val titleWidth = paint.measureText(title)
+        val msgWidth = paint.measureText(msg)
+        var base = remainedHeight / 2 - ContentConfig.lineMargin / 2
+        var left = remainedWidth / 2 - titleWidth / 2
+        loadingCanvas.drawText(title, left, base, paint)
+        base += ContentConfig.loadingSize + ContentConfig.lineMargin
+        left = remainedWidth / 2 - msgWidth / 2
+        loadingCanvas.drawText(msg, left, base, paint)
+        loadingCanvas.setBitmap(null)
+        return bitmap
     }
 }

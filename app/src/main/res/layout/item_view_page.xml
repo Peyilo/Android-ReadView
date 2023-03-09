@@ -13,7 +13,8 @@
         android:textSize="11sp"
         android:textColor="@color/black"
         android:text="页眉"
-        android:lines="1"/>
+        android:lines="1"
+        android:paddingTop="30dp"/>
 
     <org.klee.readview.widget.ContentView
         android:id="@+id/page_content"
@@ -34,7 +35,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:paddingHorizontal="30dp">
+        android:paddingHorizontal="30dp"
+        android:paddingVertical="10dp">
         <TextClock
             android:id="@+id/page_footer_clock"
             android:layout_width="wrap_content"

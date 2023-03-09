@@ -22,6 +22,7 @@ class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
     private var scrolledView: View? = null
 
     private val minFlipDistance = 40
+    private val animTime = 600
 
     private val shadowPaint: Paint = Paint()
     private val gradientColors = intArrayOf(-0x71000000, 0x00000000)
@@ -84,7 +85,7 @@ class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
                     -scrollX
                 }
             }
-            scroller.startScroll(scrollX, 0, dx, 0)
+            scroller.startScroll(scrollX, 0, dx, 0, animTime)
             pageDirection = PageDirection.NONE
             readView.invalidate()
             // 尝试加载新的视图

@@ -15,6 +15,7 @@ import org.klee.readview.loader.NativeLoader
 import org.klee.readview.utils.invisible
 import org.klee.readview.utils.visible
 import java.io.File
+import java.util.TimerTask
 import java.util.concurrent.Executors
 
 private const val TAG = "ReadView"
@@ -50,6 +51,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     var initFinished = false
 
     private val threadPool by lazy { Executors.newFixedThreadPool(10) }
+
 
     /**
      * 对外提供的ReadPage自定义API函数，可以通过该函数配置ReadPage的内容视图、页眉视图、页脚视图
@@ -139,19 +141,25 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     /**
      * 代理bookLoader的方法，实现回调
      */
-    private fun loadBook(): BookData {
+    private fun initBook() {
         book = bookLoader.loadBook()
         Log.d(TAG, "loadBook: book initialized")
         callback?.onTocInitialized(book!!)                      // callback function
-        return book!!
     }
 
     private fun loadChapter(chap: ChapData) {
-        chap.status = ChapterStatus.IS_LOADING
-        bookLoader.loadChapter(chap)
-        chap.status = ChapterStatus.NO_SPLIT
-        callback?.onLoadChap(chap)
-        Log.d(TAG, "loadChapter: chapter ${chap.chapIndex}")
+        synchronized(chap) {
+            chap.status = ChapterStatus.IS_LOADING
+            try {
+                bookLoader.loadChapter(chap)
+                chap.status = ChapterStatus.NO_SPLIT
+                callback?.onLoadChap(chap)
+                Log.d(TAG, "loadChapter: chapter ${chap.chapIndex} success")
+            } catch (e: Exception) {
+                chap.status = ChapterStatus.NO_LOAD
+                Log.e(TAG, "loadChapter: chapter ${chap.chapIndex} fail")
+            }
+        }
     }
 
     private fun onChapterChange(oldChapIndex: Int, newChapIndex: Int) {
@@ -203,19 +211,20 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     override fun updateChildView(convertView: ReadPage, direction: PageDirection): ReadPage {
         super.updateChildView(convertView, direction)
-        var bitmap: Bitmap? = null
+        var pageData: PageData? = null
         if (direction == PageDirection.NEXT) {
             if (hasNextPage()) {
-                bitmap = getPageBitmap(getNextPage())
+                pageData = getNextPage()
             }
         }
         if (direction == PageDirection.PREV) {
             if (hasPreChap()) {
-                bitmap = getPageBitmap(getPrevPage())
+                pageData = getPrevPage()
             }
         }
-        bitmap?.let {
-            convertView.setContent(bitmap)
+        pageData?.let {
+            convertView.setContent(getPageBitmap(pageData))
+            callback?.onUpdatePage(getChap(pageData.chapIndex)!!, pageData.pageIndex)
         }
         return convertView
     }
@@ -283,13 +292,16 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         this.curChapIndex = chapIndex
         this.curPageIndex = pageIndex
         startTask {
-            val book = loadBook()                                   // load toc
-            requestLoadChapters(chapIndex)
+            initBook()                                   // load toc
             post {
-                requestSplitChapters(chapIndex)
                 afterInit()
                 refreshAllPage()
-                callback?.onInitialized(book)
+            }
+            requestLoadChapters(chapIndex, alwaysLoad = true)
+            post {
+                requestSplitChapters(chapIndex)
+                refreshAllPage()
+                callback?.onInitialized(this.book!!)
             }
         }
     }
@@ -344,19 +356,21 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             validateChapIndex(chapIndex)
         }
         val chapter = getChap(chapIndex)!!
-        val status = chapter.status
-        if (status == ChapterStatus.NO_LOAD || status == ChapterStatus.IS_LOADING) {
-            throw IllegalStateException("章节${chapIndex}当前状态为${status}，无法分页!")
-        }
-        if (alwaysSplit) {
-            chapter.status = ChapterStatus.IS_SPLITTING
-            pageFactory.splitPage(chapter)
-            chapter.status = ChapterStatus.FINISHED
-        } else {
-            if (status == ChapterStatus.NO_SPLIT) {
+        synchronized(chapter) {
+            val status = chapter.status
+            if (status == ChapterStatus.NO_LOAD || status == ChapterStatus.IS_LOADING) {
+                throw IllegalStateException("Chapter${chapIndex} 当前状态为 ${status}，无法分页!")
+            }
+            if (alwaysSplit) {
                 chapter.status = ChapterStatus.IS_SPLITTING
                 pageFactory.splitPage(chapter)
                 chapter.status = ChapterStatus.FINISHED
+            } else {
+                if (status == ChapterStatus.NO_SPLIT) {
+                    chapter.status = ChapterStatus.IS_SPLITTING
+                    pageFactory.splitPage(chapter)
+                    chapter.status = ChapterStatus.FINISHED
+                }
             }
         }
     }
@@ -376,9 +390,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
      * TODO: 通过为PageData设置一个bitmapCache实现
      */
     private fun createLoadingPage(chapIndex: Int, chapTitle: String): PageData {
-        val tempChap = ChapData(chapIndex, chapTitle, "正在加载中...")
-        pageFactory.splitPage(tempChap)
-        return tempChap.getPage(1)
+        val pageData = PageData(chapIndex, 1)
+        pageData.bitmapCache = pageFactory.createLoadingBitmap(chapTitle, "正在加载中...")
+        onBitmapCreate(pageData.bitmapCache!!)
+        return pageData
     }
 
     private fun getPage(chapIndex: Int, pageIndex: Int): PageData {
@@ -421,7 +436,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             }
         } else {
             if (hasPreChap()) {
-                return getPage(curChapIndex - 1, 1)
+                val prevChap = getChap(curChapIndex - 1)!!
+                return if (prevChap.status != ChapterStatus.FINISHED) {
+                    getPage(curChapIndex - 1, 1)
+                } else {
+                    getPage(curChapIndex - 1, prevChap.pageCount)
+                }
             } else {
                 throw IllegalStateException()
             }
@@ -430,9 +450,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     /**
      * 每次创建bitmap都会回调该函数，可以在该函数内进行bitmap的回收处理
+     * bitmap很消耗内存，一个1080*2160的ARGB_8888 bitmap，可以占到将近10mb内存
      */
     private fun onBitmapCreate(bitmap: Bitmap) {
-
+        Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
     }
 
 
@@ -461,6 +482,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         val curPage = getCurPage()
         val bitmap = getPageBitmap(curPage)
         curPageView.setContent(bitmap)
+        callback?.onUpdatePage(getChap(curPage.chapIndex)!!, curPage.pageIndex)
     }
 
     private fun refreshPrevPage() {
@@ -468,6 +490,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             val prevPage = getPrevPage()
             val bitmap = getPageBitmap(prevPage)
             prePageView.setContent(bitmap)
+            callback?.onUpdatePage(getChap(prevPage.chapIndex)!!, prevPage.pageIndex)
         }
     }
 
@@ -476,6 +499,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             val nextPage = getNextPage()
             val bitmap = getPageBitmap(nextPage)
             nextPageView.setContent(bitmap)
+            callback?.onUpdatePage(getChap(nextPage.chapIndex)!!, nextPage.pageIndex)
         }
     }
 
@@ -505,6 +529,8 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
          * 该方法会在主线程执行
          */
         fun onInitialized(book: BookData) = Unit
+
+        fun onUpdatePage(chap: ChapData, pageIndex: Int)
     }
 
     companion object {

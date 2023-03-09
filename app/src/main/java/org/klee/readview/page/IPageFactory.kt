@@ -7,4 +7,6 @@ import org.klee.readview.entities.PageData
 interface IPageFactory {
     fun splitPage(chapData: ChapData): Boolean
     fun createPageBitmap(pageData: PageData): Bitmap
+
+    fun createLoadingBitmap(title: String, msg: String): Bitmap
 }

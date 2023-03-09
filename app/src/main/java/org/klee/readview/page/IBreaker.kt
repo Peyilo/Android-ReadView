@@ -23,6 +23,6 @@ interface IBreaker {
     /**
      * 在本轮IBreaker使用结束以后，调用该函数清除产生的缓存数据
      */
-    fun recycle()
+    fun recycle() = Unit
 
 }

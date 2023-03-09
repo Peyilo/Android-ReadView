@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import org.klee.readview.entities.IndexBean
 import org.klee.readview.page.DefaultPageFactory
 import org.klee.readview.page.IPageFactory
 

@@ -121,6 +121,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
                 readData.getPageBitmap(pageData)
             )
             callback?.onUpdatePage(
+                convertView,
                 readData.getChap(pageData.chapIndex),
                 pageData.pageIndex
             )
@@ -245,6 +246,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             val bitmap = getPageBitmap(curPage)
             curPageView.setContent(bitmap)
             callback?.onUpdatePage(
+                curPageView,
                 getChap(curPage.chapIndex),
                 curPage.pageIndex
             )
@@ -258,6 +260,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
                 val bitmap = getPageBitmap(prevPage)
                 prePageView.setContent(bitmap)
                 callback?.onUpdatePage(
+                    prePageView,
                     getChap(prevPage.chapIndex),
                     prevPage.pageIndex
                 )
@@ -272,6 +275,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
                 val bitmap = getPageBitmap(nextPage)
                 nextPageView.setContent(bitmap)
                 callback?.onUpdatePage(
+                    nextPageView,
                     getChap(nextPage.chapIndex),
                     nextPage.pageIndex
                 )
@@ -315,7 +319,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
          */
         fun onLoadChap(chap: ChapData, success: Boolean) = Unit
 
-        fun onUpdatePage(chap: ChapData, pageIndex: Int) = Unit
+        fun onUpdatePage(convertView: PageView, chap: ChapData, pageIndex: Int) = Unit
     }
 
     companion object {

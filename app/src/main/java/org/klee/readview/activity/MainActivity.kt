@@ -4,12 +4,15 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.klee.readview.R
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
+import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.loader.SfacgLoader
+import org.klee.readview.widget.PageView
 import org.klee.readview.widget.ReadView
 
 private const val TAG = "MainActivity"
@@ -26,7 +29,11 @@ class MainActivity : AppCompatActivity() {
         val readView = findViewById<ReadView>(R.id.read_view)
         // 配置ReadPage
         readView.initPage { readPage, _ ->
-            readPage.initLayout(R.layout.item_view_page, R.id.page_content)
+            readPage.initLayout(layoutId = R.layout.item_view_page,
+                contentId = R.id.page_content,
+                headerId = R.id.page_header,
+                footerId = R.id.page_footer
+            )
         }
         readView.setCallback(object : ReadView.Callback {
             override fun onTocInitialized(book: BookData) {
@@ -41,6 +48,17 @@ class MainActivity : AppCompatActivity() {
             override fun onLoadChap(chap: ChapData, success: Boolean) {
                 Log.d(TAG, "onLoadChap: chapter ${chap.chapIndex} " +
                         "load ${if (success) "success" else "fail"}")
+            }
+
+            override fun onUpdatePage(convertView: PageView, chap: ChapData, pageIndex: Int) {
+                val header = convertView.header!! as TextView
+                header.text = chap.title
+                val process = convertView.footer!!.findViewById(R.id.page_footer_process) as TextView
+                process.text = if (chap.status == ChapterStatus.FINISHED) {
+                    "${pageIndex}/${chap.pageCount}"
+                } else {
+                    "loading"
+                }
             }
         })
         readView.openBook(SfacgLoader(591785), 10)

@@ -1,6 +1,7 @@
 package org.klee.readview.widget
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
@@ -10,8 +11,10 @@ import androidx.annotation.IntRange
 import org.klee.readview.config.ContentConfig
 import org.klee.readview.entities.*
 import org.klee.readview.loader.BookLoader
+import org.klee.readview.loader.NativeLoader
 import org.klee.readview.utils.invisible
 import org.klee.readview.utils.visible
+import java.io.File
 import java.util.concurrent.Executors
 
 private const val TAG = "ReadView"
@@ -171,19 +174,16 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         val oldChapIndex = curChapIndex
         val oldPageIndex = curPageIndex
         val curChap = getChap(curChapIndex)!!
-        if (curChap.status == ChapterStatus.FINISHED) {
-            if (curPageIndex > 1) {
-                curPageIndex--
-                onPageChange(oldChapIndex, oldPageIndex, curChapIndex, curPageIndex)
-                return
-            }
-        }
-        val preChap = getChap(curChapIndex - 1)!!
-        curChapIndex--
-        curPageIndex = if (preChap.status == ChapterStatus.FINISHED) {
-            preChap.pageCount
+        if (curChap.status == ChapterStatus.FINISHED && curPageIndex > 1) {
+            curPageIndex--
         } else {
-            1
+            val preChap = getChap(curChapIndex - 1)!!
+            curChapIndex--
+            curPageIndex = if (preChap.status == ChapterStatus.FINISHED) {
+                preChap.pageCount
+            } else {
+                1
+            }
         }
         onPageChange(oldChapIndex, oldPageIndex, curChapIndex, curPageIndex)
     }
@@ -192,33 +192,30 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         val oldChapIndex = curChapIndex
         val oldPageIndex = curPageIndex
         val curChap = getChap(curChapIndex)!!
-        if (curChap.status == ChapterStatus.FINISHED) {
-            if (curPageIndex < curChap.pageCount) {
-                curPageIndex++
-                onPageChange(oldChapIndex, oldPageIndex, curChapIndex, curPageIndex)
-                return
-            }
+        if (curChap.status == ChapterStatus.FINISHED && curPageIndex < curChap.pageCount) {
+            curPageIndex++
+        } else {
+            curChapIndex++
+            curPageIndex = 1
         }
-        curChapIndex++
-        curPageIndex = 1
         onPageChange(oldChapIndex, oldPageIndex, curChapIndex, curPageIndex)
     }
 
     override fun updateChildView(convertView: ReadPage, direction: PageDirection): ReadPage {
         super.updateChildView(convertView, direction)
+        var bitmap: Bitmap? = null
         if (direction == PageDirection.NEXT) {
             if (hasNextPage()) {
-                convertView.setContent(pageFactory.createPage(
-                    getNextPage()
-                ))
+                bitmap = getPageBitmap(getNextPage())
             }
         }
         if (direction == PageDirection.PREV) {
             if (hasPreChap()) {
-                convertView.setContent(pageFactory.createPage(
-                    getPrevPage()
-                ))
+                bitmap = getPageBitmap(getPrevPage())
             }
+        }
+        bitmap?.let {
+            convertView.setContent(bitmap)
         }
         return convertView
     }
@@ -260,7 +257,8 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     /**
      * 设置书籍显示的进度
-     * @param chapIndex 章节序号，chapIndex = 1表示第一章，THE_LAST则表示的是最后一章或者最后一页，pageIndex同理
+     * TODO： 支持THE_LAST参数，THE_LAST表示的是最后一章或者最后一页
+     * @param chapIndex 章节序号，chapIndex = 1表示第一章，pageIndex同理
      * @param pageIndex 分页序号，表示的是在章节中的位置
      */
     fun setProcess(chapIndex: Int, pageIndex: Int = 1) {
@@ -273,6 +271,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    /**
+     * 根据给定的BookLoader，加载并显示书籍的内容
+     */
     fun openBook(
         loader: BookLoader,
         @IntRange(from = 1) chapIndex: Int = 1,
@@ -293,13 +294,34 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    /**
+     * 使用默认的本地书籍加载器，加载并显示书籍的内容
+     */
+    fun openBook(
+        file: File,
+        @IntRange(from = 1) chapIndex: Int = 1,
+        @IntRange(from = 1) pageIndex: Int = 1
+    ) {
+        openBook(NativeLoader(file), chapIndex, pageIndex)
+    }
+
+    /**
+     * TODO: 显示指定的字符串
+     */
+    fun showText(
+        text: String,
+        @IntRange(from = 1) pageIndex: Int = 1
+    ) {
+
+    }
+
     private fun requestLoadChapters(chapIndex: Int, alwaysLoad: Boolean = false) {
         val preprocessIndexList = getPreprocessIndexList(chapIndex)
         preprocessIndexList.forEach { index ->
             val chap = getChap(index)!!
             if (alwaysLoad) {          // 加载全部，而不管该章节是否已经加载或者加载中
                 loadChapter(chap)
-            } else {
+            } else {                   // 检查章节状态，只有当章节处于未加载状态时，才进行加载
                 if (chap.status == ChapterStatus.NO_LOAD) {
                     loadChapter(chap)
                 }
@@ -349,14 +371,21 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         return curChapIndex != 1
     }
 
+    /**
+     * 创建一个处于加载中的PageData
+     */
+    private fun createLoadingPage(chapIndex: Int, chapTitle: String): PageData {
+        val tempChap = ChapData(chapIndex, chapTitle, "正在加载中...")
+        pageFactory.splitPage(tempChap)
+        return tempChap.getPage(1)
+    }
+
     private fun getPage(chapIndex: Int, pageIndex: Int): PageData {
         val chap = getChap(chapIndex)!!
         return if (chap.status == ChapterStatus.FINISHED) {
             book!!.getChapter(chapIndex).getPage(pageIndex)
         } else {
-            val tempChap = ChapData(chapIndex, chap.title, "正在加载中...")
-            pageFactory.splitPage(tempChap)
-            tempChap.getPage(1)
+            createLoadingPage(chapIndex, chap.title)
         }
     }
 
@@ -398,32 +427,54 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    /**
+     * 每次创建bitmap都会回调该函数，可以在该函数内进行bitmap的回收处理
+     */
+    private fun onBitmapCreate(bitmap: Bitmap) {
+
+    }
+
+
+    /**
+     * 根据给定的PageData对象获取其相应的bitmap对象
+     */
+    private fun getPageBitmap(pageData: PageData): Bitmap {
+        var bitmap: Bitmap? = null
+        if (pageData.bitmapCache != null) {     // 先检查是否有缓存bitmap
+            if (pageData.bitmapCache!!.isRecycled) {
+                pageData.bitmapCache = null
+            } else {
+                bitmap = pageData.bitmapCache!!
+            }
+        }
+        if (bitmap == null) {
+            bitmap = pageFactory.createPage(pageData)
+            onBitmapCreate(bitmap)
+            pageData.bitmapCache = bitmap
+        }
+        return bitmap
+    }
+
     // 刷新当前ReadPage
     private fun refreshCurPage() {
-        curPageView.setContent(
-            pageFactory.createPage(
-                getCurPage()
-            )
-        )
+        val curPage = getCurPage()
+        val bitmap = getPageBitmap(curPage)
+        curPageView.setContent(bitmap)
     }
 
     private fun refreshPrevPage() {
         if (hasPrevPage()) {
-            prePageView.setContent(
-                pageFactory.createPage(
-                    getPrevPage()
-                )
-            )
+            val prevPage = getPrevPage()
+            val bitmap = getPageBitmap(prevPage)
+            prePageView.setContent(bitmap)
         }
     }
 
     private fun refreshNextPage() {
         if (hasNextPage()) {
-            nextPageView.setContent(
-                pageFactory.createPage(
-                    getNextPage()
-                )
-            )
+            val nextPage = getNextPage()
+            val bitmap = getPageBitmap(nextPage)
+            nextPageView.setContent(bitmap)
         }
     }
 

@@ -24,7 +24,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(applicationContext, "章节目录初始化完成！", Toast.LENGTH_SHORT).show()
                 }
             }
-
             override fun onInitialized(book: BookData) {
                 Toast.makeText(applicationContext, "视图初始化完成！", Toast.LENGTH_SHORT).show()
             }

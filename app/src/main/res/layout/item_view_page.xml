@@ -12,7 +12,6 @@
         android:gravity="center"
         android:textSize="11sp"
         android:textColor="@color/black"
-        android:text="页眉"
         android:lines="1"
         android:paddingTop="30dp"/>
 
@@ -50,8 +49,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:textSize="11sp"
-            android:textColor="@color/black"
-            android:text="页脚"/>
+            android:textColor="@color/black"/>
     </RelativeLayout>
 
 </RelativeLayout>

@@ -1,20 +1,16 @@
 package org.klee.readview.widget
 
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.annotation.IntRange
 import org.klee.readview.config.ContentConfig
-import org.klee.readview.entities.BookData
-import org.klee.readview.entities.ChapData
-import org.klee.readview.entities.ChapterStatus
-import org.klee.readview.entities.PageData
+import org.klee.readview.entities.*
 import org.klee.readview.loader.BookLoader
 
 /**
  * 由DataSource对数据进行统一的管理，数据主要有文本数据、bitmap缓存两种
  */
 private const val TAG = "DataSource"
-class ReadData {
+class ReadData : BitmapProvider {
 
     var callback: ReadView.Callback? = null
 
@@ -28,8 +24,8 @@ class ReadData {
     @IntRange(from = 1)
     var curPageIndex: Int = 1
         private set
-    private var preLoadBefore = 1   // 预加载当前章节之前的章节
-    private var preLoadBehind = 1   // 预加载当前章节之后的章节
+    private var preLoadBefore = 0   // 预加载当前章节之前的章节
+    private var preLoadBehind = 0   // 预加载当前章节之后的章节
 
     val chapCount: Int
         get() {              // 章节数
@@ -48,9 +44,7 @@ class ReadData {
      * 获取指定下标的章节
      */
     fun getChap(@IntRange(from = 1) chapIndex: Int): ChapData {
-        if (chapCount == 0 || chapIndex > chapCount) {
-            throw IllegalStateException("chapIndex = $chapIndex，chapCount = $chapCount")
-        }
+        validateChapIndex(chapIndex)
         return book!!.getChapter(chapIndex)
     }
 
@@ -127,12 +121,17 @@ class ReadData {
         }
     }
 
-    fun requestLoadAndSplit(chapIndex: Int, always: Boolean = false) = preprocess(chapIndex) {
+    fun requestLoadAndSplit(chapIndex: Int,
+                            always: Boolean = false,
+                            onFinished: ((chapData: ChapData) -> Unit)? = null
+    ) = preprocess(chapIndex) {
         requestLoad(it, always, false)
-        requestSplit(it, always, false)
+        requestSplit(it, always, false, onFinished)
     }
 
-    fun requestLoadChapters(chapIndex: Int, alwaysLoad: Boolean = false) = preprocess(chapIndex) {
+    fun requestLoadChapters(
+        chapIndex: Int, alwaysLoad: Boolean = false
+    ) = preprocess(chapIndex) {
         requestLoad(it, alwaysLoad, false)
     }
 
@@ -157,13 +156,18 @@ class ReadData {
         }
     }
 
-    fun requestSplitChapters(chapIndex: Int, alwaysSplit: Boolean = false) = preprocess(chapIndex) {
-        requestSplit(it, alwaysSplit, false)
+    fun requestSplitChapters(
+        chapIndex: Int,
+        alwaysSplit: Boolean = false,
+        onFinished: ((chapData: ChapData) -> Unit)? = null
+    ) = preprocess(chapIndex) {
+        requestSplit(it, alwaysSplit, false, onFinished)
     }
 
     fun requestSplit(
         chapIndex: Int, alwaysSplit: Boolean = false,
-        needValid: Boolean = true
+        needValid: Boolean = true,
+        onFinished: ((chapData: ChapData) -> Unit)? = null
     ) {
         if (needValid) validateChapIndex(chapIndex)
         val chapter = getChap(chapIndex)
@@ -172,83 +176,59 @@ class ReadData {
             if (status == ChapterStatus.NO_LOAD || status == ChapterStatus.IS_LOADING) {
                 throw IllegalStateException("Chapter${chapIndex} 当前状态为 ${status}，无法分页!")
             }
-            if (alwaysSplit) {
+            if (alwaysSplit || status == ChapterStatus.NO_SPLIT) {
                 chapter.status = ChapterStatus.IS_SPLITTING
                 pageFactory.splitPage(chapter)
                 chapter.status = ChapterStatus.FINISHED
-            } else {
-                if (status == ChapterStatus.NO_SPLIT) {
-                    chapter.status = ChapterStatus.IS_SPLITTING
-                    pageFactory.splitPage(chapter)
-                    chapter.status = ChapterStatus.FINISHED
-                }
+                onFinished?.let { it(chapter) }
             }
         }
     }
 
-    /**
-     * 根据给定的PageData对象获取其相应的bitmap对象
-     */
-    fun getPageBitmap(pageData: PageData): Bitmap {
-        var bitmap: Bitmap? = null
-        if (pageData.bitmapCache != null) {     // 先检查是否有缓存bitmap
-            if (pageData.bitmapCache!!.isRecycled) {
-                pageData.bitmapCache = null
-            } else {
-                bitmap = pageData.bitmapCache!!
-            }
+    override fun getBitmap(indexBean: IndexBean): Bitmap {
+        val chap = getChap(indexBean.chapIndex)
+        val bitmap =  if (chap.status == ChapterStatus.FINISHED) {
+            pageFactory.createPageBitmap(
+                getPage(indexBean)
+            )
+        } else {
+            pageFactory.createLoadingBitmap(
+                chap.title,
+                "正在加载中..."
+            )
         }
-        if (bitmap == null) {
-            bitmap = pageFactory.createPageBitmap(pageData)
-            pageData.bitmapCache = bitmap
-        }
+        callback?.onBitmapCreate(bitmap)
         return bitmap
     }
 
-    /**
-     * 创建一个处于加载中的PageData
-     * TODO: 通过为PageData设置一个bitmapCache实现
-     */
-    private fun createLoadingPage(chapIndex: Int, chapTitle: String): PageData {
-        val pageData = PageData(chapIndex, 1)
-        pageData.bitmapCache = pageFactory.createLoadingBitmap(chapTitle, "正在加载中...")
-        return pageData
+    private fun getPage(indexBean: IndexBean): PageData {
+        return getChap(indexBean.chapIndex)
+            .getPage(indexBean.pageIndex)
     }
 
-    private fun getPage(chapIndex: Int, pageIndex: Int): PageData {
-        val chap = getChap(chapIndex)
-        return if (chap.status == ChapterStatus.FINISHED) {
-            book!!.getChapter(chapIndex).getPage(pageIndex)
-        } else {
-            createLoadingPage(chapIndex, chap.title)
-        }
-    }
-
-    fun getCurPage(): PageData = getPage(curChapIndex, curPageIndex)
-
-    fun getNextPage(): PageData {
+    fun getNextIndexBean(): IndexBean {
         val curChap = getChap(curChapIndex)
         if (curChap.status == ChapterStatus.FINISHED) {
             if (curPageIndex != curChap.pageCount) {
-                return getPage(curChapIndex, curPageIndex + 1)
+                return IndexBean(curChapIndex, curPageIndex + 1)
             }
         }
         if (hasNextChap()) {
-            return getPage(curChapIndex + 1, 1)
+            return IndexBean(curChapIndex + 1, 1)
         } else {
             throw IllegalStateException()
         }
     }
 
-    fun getPrevPage(): PageData {
+    fun getPrevIndexBean(): IndexBean {
         val curChap = getChap(curChapIndex)
         if (curChap.status == ChapterStatus.FINISHED) {
             return if (curPageIndex > 1) {
-                getPage(curChapIndex, curPageIndex - 1)
+                IndexBean(curChapIndex, curPageIndex - 1)
             } else {
                 if (hasPreChap()) {
                     val prevChap = getChap(curChapIndex - 1)
-                    getPage(curChapIndex - 1, prevChap.pageCount)
+                    IndexBean(curChapIndex - 1,  prevChap.pageCount)
                 } else {
                     throw IllegalStateException()
                 }
@@ -257,14 +237,13 @@ class ReadData {
             if (hasPreChap()) {
                 val prevChap = getChap(curChapIndex - 1)
                 return if (prevChap.status != ChapterStatus.FINISHED) {
-                    getPage(curChapIndex - 1, 1)
+                    IndexBean(curChapIndex - 1, 1)
                 } else {
-                    getPage(curChapIndex - 1, prevChap.pageCount)
+                    IndexBean(curChapIndex - 1, prevChap.pageCount)
                 }
             } else {
                 throw IllegalStateException()
             }
         }
     }
-
 }

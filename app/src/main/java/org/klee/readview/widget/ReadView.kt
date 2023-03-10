@@ -33,6 +33,13 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private var initView: View? = null
     private var initFinished = false
 
+    override fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
+        super.initPage(initializer)
+        curPageView.setBitmapProvider(readData)
+        prePageView.setBitmapProvider(readData)
+        nextPageView.setBitmapProvider(readData)
+    }
+
     fun setCallback(callback: Callback) {
         readData.callback = callback
     }
@@ -105,25 +112,23 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     override fun updateChildView(convertView: PageView, direction: PageDirection): PageView {
         super.updateChildView(convertView, direction)
-        var pageData: PageData? = null
+        var indexBean: IndexBean? = null
         if (direction == PageDirection.NEXT) {
             if (hasNextPage()) {
-                pageData = readData.getNextPage()
+                indexBean = readData.getNextIndexBean()
             }
         }
         if (direction == PageDirection.PREV) {
             if (hasPrevPage()) {
-                pageData = readData.getPrevPage()
+                indexBean = readData.getPrevIndexBean()
             }
         }
-        pageData?.let {
-            convertView.setContent(
-                readData.getPageBitmap(pageData)
-            )
+        indexBean?.let {
+            convertView.bindContent(indexBean.chapIndex, indexBean.pageIndex)
             callback?.onUpdatePage(
                 convertView,
-                readData.getChap(pageData.chapIndex),
-                pageData.pageIndex
+                readData.getChap(indexBean.chapIndex),
+                indexBean.pageIndex
             )
         }
         return convertView
@@ -138,11 +143,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     fun setProcess(chapIndex: Int, pageIndex: Int = 1) {
         readData.setProcess(chapIndex, pageIndex)
         startTask {
-            readData.apply {
-                requestLoadChapters(chapIndex)
-                requestSplitChapters(chapIndex)
+            readData.requestLoadAndSplit(chapIndex) {
+                selectRefresh(chapIndex, pageIndex)
             }
-            selectRefresh(chapIndex, pageIndex)
         }
     }
 
@@ -202,8 +205,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             }
             readData.requestLoadChapters(chapIndex, alwaysLoad = true)
             post {
-                readData.requestSplitChapters(chapIndex)
-                refreshAllPages()
+                readData.requestSplitChapters(chapIndex) {
+                    selectRefresh(it.chapIndex)
+                }
                 callback?.onInitialized(this.book)
             }
         }
@@ -242,13 +246,11 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     // 刷新当前ReadPage
     private fun refreshCurPage() {
         readData.apply {
-            val curPage = getCurPage()
-            val bitmap = getPageBitmap(curPage)
-            curPageView.setContent(bitmap)
+            curPageView.bindContent(curChapIndex, curPageIndex)
             callback?.onUpdatePage(
                 curPageView,
-                getChap(curPage.chapIndex),
-                curPage.pageIndex
+                getChap(curChapIndex),
+                curPageIndex
             )
         }
     }
@@ -256,13 +258,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private fun refreshPrevPage() {
         if (hasPrevPage()) {
             readData.apply {
-                val prevPage = getPrevPage()
-                val bitmap = getPageBitmap(prevPage)
-                prePageView.setContent(bitmap)
+                val prevIndexBean = getPrevIndexBean()
+                prePageView.bindContent(prevIndexBean.chapIndex, prevIndexBean.pageIndex)
                 callback?.onUpdatePage(
                     prePageView,
-                    getChap(prevPage.chapIndex),
-                    prevPage.pageIndex
+                    getChap(prevIndexBean.chapIndex),
+                    prevIndexBean.pageIndex
                 )
             }
         }
@@ -271,13 +272,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private fun refreshNextPage() {
         if (hasNextPage()) {
             readData.apply {
-                val nextPage = getNextPage()
-                val bitmap = getPageBitmap(nextPage)
-                nextPageView.setContent(bitmap)
+                val nextIndexBean = getNextIndexBean()
+                nextPageView.bindContent(nextIndexBean.chapIndex, nextIndexBean.pageIndex)
                 callback?.onUpdatePage(
                     nextPageView,
-                    getChap(nextPage.chapIndex),
-                    nextPage.pageIndex
+                    getChap(nextIndexBean.chapIndex),
+                    nextIndexBean.pageIndex
                 )
             }
         }
@@ -319,7 +319,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
          */
         fun onLoadChap(chap: ChapData, success: Boolean) = Unit
 
-        fun onUpdatePage(convertView: PageView, chap: ChapData, pageIndex: Int) = Unit
+        fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) = Unit
+
+        fun onBitmapCreate(bitmap: Bitmap) = Unit
     }
 
     companion object {

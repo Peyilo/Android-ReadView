@@ -6,7 +6,6 @@ class PageData (
     val chapIndex: Int,
     val pageIndex: Int,
 ) {
-    var bitmapCache: Bitmap? = null
     private val titleLineList: ArrayList<String> by lazy { ArrayList() }
     private val contentLineList: ArrayList<LineData> by lazy { ArrayList() }
 

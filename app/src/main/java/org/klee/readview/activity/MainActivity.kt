@@ -1,5 +1,6 @@
 package org.klee.readview.activity
 
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -50,17 +51,21 @@ class MainActivity : AppCompatActivity() {
                         "load ${if (success) "success" else "fail"}")
             }
 
-            override fun onUpdatePage(convertView: PageView, chap: ChapData, pageIndex: Int) {
+            override fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) {
                 val header = convertView.header!! as TextView
-                header.text = chap.title
+                header.text = newChap.title
                 val process = convertView.footer!!.findViewById(R.id.page_footer_process) as TextView
-                process.text = if (chap.status == ChapterStatus.FINISHED) {
-                    "${pageIndex}/${chap.pageCount}"
+                process.text = if (newChap.status == ChapterStatus.FINISHED) {
+                    "${newPageIndex}/${newChap.pageCount}"
                 } else {
                     "loading"
                 }
             }
+
+            override fun onBitmapCreate(bitmap: Bitmap) {
+                Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount}")
+            }
         })
-        readView.openBook(SfacgLoader(591785), 10)
+        readView.openBook(SfacgLoader(591785))
     }
 }

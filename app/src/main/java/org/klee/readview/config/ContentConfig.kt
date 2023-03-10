@@ -11,7 +11,7 @@ import org.klee.readview.page.IPageFactory
 /**
  * ContentView绘制参数配置
  */
-object ContentConfig {
+class ContentConfig {
 
     // contentView的宽高
     var contentDimenInitialized = false         // contentView的尺寸是否完成了初始化
@@ -22,8 +22,8 @@ object ContentConfig {
         private set
 
     /*******- contentView的padding参数 -********/
-    var contentPaddingLeft = 30F
-    var contentPaddingRight = 30F
+    var contentPaddingLeft = 40F
+    var contentPaddingRight = 40F
     var contentPaddingTop = 20F
     var contentPaddingBottom = 20F
 
@@ -37,7 +37,7 @@ object ContentConfig {
 
     fun getPageFactory(): IPageFactory {
         if (pageFactory == null) {
-            pageFactory = DefaultPageFactory()
+            pageFactory = DefaultPageFactory(this)
         }
         return pageFactory!!
     }
@@ -49,17 +49,20 @@ object ContentConfig {
     val contentPaint: Paint by lazy { Paint().apply {
         textSize = 54F
         color = Color.parseColor("#2B2B2B")
+        flags = Paint.ANTI_ALIAS_FLAG
     } }
 
     val titlePaint: Paint by lazy { Paint().apply {
         typeface = Typeface.DEFAULT_BOLD
         textSize = 72F
         color = Color.BLACK
+        flags = Paint.ANTI_ALIAS_FLAG
     } }
 
     val loadingPaint by lazy { Paint().apply {
         textSize = 45F
         color = Color.parseColor("#292929")
+        flags = Paint.ANTI_ALIAS_FLAG
     } }
 
     val contentColor get() = contentPaint.color
@@ -88,5 +91,13 @@ object ContentConfig {
             bgBitmap!!
         }
         return bitmap.copy(Bitmap.Config.ARGB_8888, true)
+    }
+
+    fun destroy() {
+        bgBitmap?.let {
+            if (!bgBitmap!!.isRecycled) {
+                bgBitmap!!.recycle()
+            }
+        }
     }
 }

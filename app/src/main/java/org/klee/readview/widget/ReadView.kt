@@ -1,34 +1,39 @@
 package org.klee.readview.widget
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.IntRange
-import org.klee.readview.entities.*
+import org.klee.readview.entities.BookData
+import org.klee.readview.entities.ChapterStatus
+import org.klee.readview.entities.IndexBean
+import org.klee.readview.entities.PageDirection
 import org.klee.readview.loader.BookLoader
 import org.klee.readview.loader.NativeLoader
 import org.klee.readview.utils.invisible
 import org.klee.readview.utils.visible
+import org.klee.readview.widget.api.ReadViewCallback
 import java.io.File
 import java.util.concurrent.Executors
 
 private const val TAG = "ReadView"
 class ReadView(context: Context, attributeSet: AttributeSet?) :
-    BaseReadView(context, attributeSet) {
-
+    BaseReadView(context, attributeSet), ReadViewCallback
+{
     private val threadPool by lazy { Executors.newFixedThreadPool(10) }
-    private val readData by lazy { ReadData() }
+    private val readData by lazy { ReadData().apply {
+        this.contentConfig = this@ReadView.contentConfig
+    } }
 
     val book: BookData get() = readData.book!!
     val chapCount get() = readData.chapCount
     val curChapIndex get() = readData.curChapIndex
     val curPageIndex get() = readData.curPageIndex
 
-    private val callback: Callback? get() = readData.callback
+    private val callback: ReadViewCallback? get() = readData.callback
 
     private var initView: View? = null
     private var initFinished = false
@@ -40,8 +45,8 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         nextPageView.setBitmapProvider(readData)
     }
 
-    fun setCallback(callback: Callback) {
-        readData.callback = callback
+    fun setCallback(callback: ReadViewCallback) {
+        readData.callback = this.unite(callback)
     }
 
     override fun onDetachedFromWindow() {
@@ -83,7 +88,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     private fun onChapterChange(oldChapIndex: Int, newChapIndex: Int) {
         startTask {
-            readData.requestLoadAndSplit(newChapIndex)
+            readData.requestLoadAndSplit(newChapIndex) {
+                refreshAllPages()
+            }
         }
     }
 
@@ -142,9 +149,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
      */
     fun setProcess(chapIndex: Int, pageIndex: Int = 1) {
         readData.setProcess(chapIndex, pageIndex)
+        refreshAllPages()
         startTask {
             readData.requestLoadAndSplit(chapIndex) {
-                selectRefresh(chapIndex, pageIndex)
+                refreshAllPages()
             }
         }
     }
@@ -177,7 +185,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     /**
      * 当目录加载完，需要调用该函数显示章节内容
      */
-    private fun afterInit() {
+    private fun onInitSuccess() {
         curPageView.visible()
         prePageView.visible()
         nextPageView.visible()
@@ -199,14 +207,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         prepareInit()
         startTask {
             readData.loadBook()        // load toc
-            post {
-                afterInit()
-                refreshAllPages()
-            }
             readData.requestLoadChapters(chapIndex, alwaysLoad = true)
             post {
                 readData.requestSplitChapters(chapIndex) {
-                    selectRefresh(it.chapIndex)
+                    refreshAllPages()
                 }
                 callback?.onInitialized(this.book)
             }
@@ -233,15 +237,6 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     ) {
 
     }
-
-    /**
-     * 每次创建bitmap都会回调该函数，可以在该函数内进行bitmap的回收处理
-     * bitmap很消耗内存，一个1080*2160的ARGB_8888 bitmap，可以占到将近10mb内存
-     */
-    private fun onBitmapCreate(bitmap: Bitmap) {
-        Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
-    }
-
 
     // 刷新当前ReadPage
     private fun refreshCurPage() {
@@ -283,11 +278,16 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    /**
-     * 根据对比当前章节序号、当前页码序号进行有选择的刷新
-     */
-    private fun selectRefresh(chapIndex: Int, pageIndex: Int = 1) {
-        refreshAllPages()
+    fun setTextSize(size: Float) {
+        // 关闭所有线程
+        threadPool.shutdownNow()
+        contentConfig.contentPaint.textSize = size
+        startTask {
+            // 清空已有的分页数据
+            readData.book?.clearAllPage()
+            // TODO: 处理重新分页后的分页序号
+            refreshAllPages()
+        }
     }
 
     /**
@@ -299,29 +299,15 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         refreshPrevPage()
     }
 
-    interface Callback {
-
-        /**
-         * 当章节目录完成初始化时的回调
-         * 注意：该方法会在子线程中执行，如果涉及到UI操作，请利用post()在主线程执行
-         */
-        fun onTocInitialized(book: BookData) = Unit
-
-        /**
-         * 当章节目录完成初始化、章节内容完成加载以及分页、刷新视图以后，会回调该函数
-         * 该方法会在主线程执行
-         */
-        fun onInitialized(book: BookData) = Unit
-
-        /**
-         * 加载章节完成的回调，注意：该函数处于子线程中
-         * @param success 是否加载成功
-         */
-        fun onLoadChap(chap: ChapData, success: Boolean) = Unit
-
-        fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) = Unit
-
-        fun onBitmapCreate(bitmap: Bitmap) = Unit
+    override fun onTocInitialized(book: BookData?, success: Boolean) {
+        if (success) {
+            post {
+                onInitSuccess()
+                refreshAllPages()
+            }
+        } else {
+            (initView as TextView).text = "加载失败"
+        }
     }
 
     companion object {

@@ -8,6 +8,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import org.klee.readview.config.ContentConfig
 import org.klee.readview.delegate.CoverPageDelegate
 import org.klee.readview.delegate.PageDelegate
 import org.klee.readview.entities.PageDirection
@@ -19,6 +20,7 @@ import kotlin.math.abs
 open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     : ViewGroup(context, attributeSet) {
 
+    internal val contentConfig by lazy { ContentConfig() }
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val scrollSlop = touchSlop
 
@@ -26,7 +28,7 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     internal lateinit var prePageView: PageView
     internal lateinit var nextPageView: PageView
 
-    var shadowWidth: Int = 25
+    var shadowWidth: Int = 15
 
     private var isMove = false
     private var isPageMove = false
@@ -60,6 +62,9 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
         if (!(curPageView.initFinished && prePageView.initFinished && nextPageView.initFinished)) {
             throw IllegalStateException("没有完成PageView的初始化！")
         }
+        curPageView.content.config = contentConfig
+        prePageView.content.config = contentConfig
+        nextPageView.content.config = contentConfig
         addView(nextPageView)
         addView(curPageView)
         addView(prePageView)
@@ -160,6 +165,11 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
             onFlipToNext()
         }
         return convertView
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        contentConfig.destroy()
     }
 
 }

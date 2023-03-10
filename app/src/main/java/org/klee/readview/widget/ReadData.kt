@@ -5,6 +5,8 @@ import androidx.annotation.IntRange
 import org.klee.readview.config.ContentConfig
 import org.klee.readview.entities.*
 import org.klee.readview.loader.BookLoader
+import org.klee.readview.widget.api.BitmapProvider
+import org.klee.readview.widget.api.ReadViewCallback
 
 /**
  * 由DataSource对数据进行统一的管理，数据主要有文本数据、bitmap缓存两种
@@ -12,11 +14,12 @@ import org.klee.readview.loader.BookLoader
 private const val TAG = "DataSource"
 class ReadData : BitmapProvider {
 
-    var callback: ReadView.Callback? = null
+    lateinit var contentConfig: ContentConfig
+    var callback: ReadViewCallback? = null
 
     var book: BookData? = null
     lateinit var bookLoader: BookLoader
-    private val pageFactory get() = ContentConfig.getPageFactory()
+    private val pageFactory get() = contentConfig.getPageFactory()
 
     @IntRange(from = 1)
     var curChapIndex: Int = 1
@@ -24,8 +27,8 @@ class ReadData : BitmapProvider {
     @IntRange(from = 1)
     var curPageIndex: Int = 1
         private set
-    private var preLoadBefore = 0   // 预加载当前章节之前的章节
-    private var preLoadBehind = 0   // 预加载当前章节之后的章节
+    @IntRange(from = 1) private var preLoadBefore = 1   // 预加载当前章节之前的章节
+    @IntRange(from = 1) private var preLoadBehind = 1   // 预加载当前章节之后的章节
 
     val chapCount: Int
         get() {              // 章节数
@@ -49,8 +52,12 @@ class ReadData : BitmapProvider {
     }
 
     fun loadBook() {
-        book = bookLoader.loadBook()
-        callback?.onTocInitialized(book!!)
+        try {
+            book = bookLoader.loadBook()
+            callback?.onTocInitialized(book!!, true)
+        } catch (e: Exception) {
+            callback?.onTocInitialized(null, false)
+        }
     }
 
     fun hasNextChap(): Boolean {
@@ -123,7 +130,7 @@ class ReadData : BitmapProvider {
 
     fun requestLoadAndSplit(chapIndex: Int,
                             always: Boolean = false,
-                            onFinished: ((chapData: ChapData) -> Unit)? = null
+                            onFinished: ((chapData: ChapData?) -> Unit)? = null
     ) = preprocess(chapIndex) {
         requestLoad(it, always, false)
         requestSplit(it, always, false, onFinished)
@@ -159,15 +166,20 @@ class ReadData : BitmapProvider {
     fun requestSplitChapters(
         chapIndex: Int,
         alwaysSplit: Boolean = false,
-        onFinished: ((chapData: ChapData) -> Unit)? = null
-    ) = preprocess(chapIndex) {
-        requestSplit(it, alwaysSplit, false, onFinished)
+        onFinished: ((chapData: ChapData?) -> Unit)? = null
+    ) {
+        preprocess(chapIndex) {
+            requestSplit(it, alwaysSplit, false)
+        }
+        onFinished?.let {
+            onFinished(null)
+        }
     }
 
     fun requestSplit(
         chapIndex: Int, alwaysSplit: Boolean = false,
         needValid: Boolean = true,
-        onFinished: ((chapData: ChapData) -> Unit)? = null
+        onFinished: ((chapData: ChapData?) -> Unit)? = null
     ) {
         if (needValid) validateChapIndex(chapIndex)
         val chapter = getChap(chapIndex)

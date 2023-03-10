@@ -11,9 +11,10 @@
         android:layout_alignParentTop="true"
         android:gravity="center"
         android:textSize="11sp"
-        android:textColor="@color/black"
+        android:textColor="@color/page_view_light_gray"
         android:lines="1"
-        android:paddingTop="30dp"/>
+        android:paddingTop="30dp"
+        android:paddingBottom="20dp"/>
 
     <org.klee.readview.widget.ContentView
         android:id="@+id/page_content"
@@ -33,23 +34,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:gravity="center"
         android:orientation="horizontal"
-        android:paddingHorizontal="30dp"
-        android:paddingVertical="10dp">
-        <TextClock
-            android:id="@+id/page_footer_clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:textColor="@color/black"
-            android:textSize="11sp" />
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="6dp">
         <TextView
             android:id="@+id/page_footer_process"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
             android:textSize="11sp"
-            android:textColor="@color/black"/>
+            android:textColor="@color/page_view_light_gray"/>
+        <TextClock
+            android:id="@+id/page_footer_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:format24Hour="HH:mm"
+            android:textColor="@color/page_view_light_gray"
+            android:textSize="11sp" />
     </RelativeLayout>
 
 </RelativeLayout>

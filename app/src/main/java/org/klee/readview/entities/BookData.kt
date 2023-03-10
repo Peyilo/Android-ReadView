@@ -22,4 +22,11 @@ class BookData (
     }
     // 获取章节
     fun getChapter(@IntRange(from = 1) chapIndex: Int) = chapList[chapIndex - 1]
+
+    fun clearAllPage() {
+        chapList.forEach {
+            it.clearPages()
+            it.status = ChapterStatus.NO_SPLIT
+        }
+    }
 }

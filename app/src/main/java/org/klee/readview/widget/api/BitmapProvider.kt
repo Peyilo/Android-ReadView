@@ -1,4 +1,4 @@
-package org.klee.readview.widget
+package org.klee.readview.widget.api
 
 import android.graphics.Bitmap
 import org.klee.readview.entities.IndexBean

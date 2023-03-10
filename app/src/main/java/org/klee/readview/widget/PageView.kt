@@ -1,7 +1,6 @@
 package org.klee.readview.widget
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.os.Looper
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -9,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
+import org.klee.readview.widget.api.BitmapProvider
 
 class PageView(context: Context, attributeSet: AttributeSet? = null)
     : ViewGroup(context, attributeSet) {

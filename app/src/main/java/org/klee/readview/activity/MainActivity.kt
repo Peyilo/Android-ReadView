@@ -15,6 +15,7 @@ import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.loader.SfacgLoader
 import org.klee.readview.widget.PageView
 import org.klee.readview.widget.ReadView
+import org.klee.readview.widget.api.ReadViewCallback
 
 private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity() {
@@ -36,21 +37,28 @@ class MainActivity : AppCompatActivity() {
                 footerId = R.id.page_footer
             )
         }
-        readView.setCallback(object : ReadView.Callback {
-            override fun onTocInitialized(book: BookData) {
-                readView.post {
-                    Toast.makeText(applicationContext, "章节目录初始化完成！", Toast.LENGTH_SHORT).show()
+        readView.setCallback(object : ReadViewCallback {
+            override fun onTocInitialized(book: BookData?, success: Boolean) {
+                if (success) {
+                    readView.post {
+                        Toast.makeText(applicationContext, "章节目录初始化完成！",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    readView.post {
+                        Toast.makeText(applicationContext, "章节目录初始化失败！",
+                            Toast.LENGTH_SHORT).show()
+                    }
                 }
+
             }
             override fun onInitialized(book: BookData) {
                 Toast.makeText(applicationContext, "分页完成！", Toast.LENGTH_SHORT).show()
             }
-
             override fun onLoadChap(chap: ChapData, success: Boolean) {
                 Log.d(TAG, "onLoadChap: chapter ${chap.chapIndex} " +
                         "load ${if (success) "success" else "fail"}")
             }
-
             override fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) {
                 val header = convertView.header!! as TextView
                 header.text = newChap.title
@@ -61,9 +69,8 @@ class MainActivity : AppCompatActivity() {
                     "loading"
                 }
             }
-
             override fun onBitmapCreate(bitmap: Bitmap) {
-                Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount}")
+                Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
             }
         })
         readView.openBook(SfacgLoader(591785))

@@ -73,14 +73,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
             }
         })
+        readView.setPreprocessParas(0, 0)
         readView.openBook(SfacgLoader(591785))
-
-        readView.setOnClickListener {
-            val curContentSize = readView.getContentSize()
-            val curTitleSize = readView.getTitleSize()
-            if (readView.setContentSize(curContentSize + 2)) {
-                readView.setTitleSize(curTitleSize + 2)
-            }
-        }
     }
 }

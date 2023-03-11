@@ -1,6 +1,7 @@
 package org.klee.readview.widget
 
 import android.content.Context
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
@@ -87,6 +88,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     private fun onChapterChange(oldChapIndex: Int, newChapIndex: Int) {
+        Log.d(TAG, "onPageChange: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
         startTask {
             readData.requestLoadAndSplit(newChapIndex) {
                 refreshAllPages()
@@ -99,8 +101,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         if (oldChapIndex != newChapIndex) {
             onChapterChange(oldChapIndex, newChapIndex)
         }
-        Log.d(TAG, "onPageChange: oldChapIndex = $oldChapIndex, oldPageIndex = $oldPageIndex")
-        Log.d(TAG, "onPageChange: newChapIndex = $newChapIndex, newPageIndex = $newPageIndex")
+        Log.d(TAG, "onPageChange: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
     }
 
     override fun onFlipToPrev() {
@@ -194,6 +195,17 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         initFinished = true
     }
 
+    override fun onTocInitialized(book: BookData?, success: Boolean) {
+        if (success) {
+            post {
+                onInitSuccess()
+                refreshAllPages()
+            }
+        } else {
+            (initView as TextView).text = "加载失败"
+        }
+    }
+
     /**
      * 根据给定的BookLoader，加载并显示书籍的内容
      */
@@ -203,6 +215,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
         readData.bookLoader = loader
+        if (readData.callback == null) {        // 如果没设置回调，就不需要unite
+            readData.callback = this
+        }
         readData.setProcess(chapIndex, pageIndex)
         prepareInit()
         startTask {
@@ -238,7 +253,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     }
 
-    // 刷新当前ReadPage
+    /**
+     * 刷新当前ReadPage页面内容
+     */
     private fun refreshCurPage() {
         readData.apply {
             curPageView.bindContent(curChapIndex, curPageIndex)
@@ -250,6 +267,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    /**
+     * 刷新上一页的内容
+     */
     private fun refreshPrevPage() {
         if (hasPrevPage()) {
             readData.apply {
@@ -264,6 +284,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
+    /**
+     * 刷新下一页的内容
+     */
     private fun refreshNextPage() {
         if (hasNextPage()) {
             readData.apply {
@@ -279,6 +302,62 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
+     * 刷新所有ReadPage视图
+     */
+    private fun refreshAllPages() {
+        refreshCurPage()
+        refreshNextPage()
+        refreshPrevPage()
+    }
+
+    /**
+     * 配置绘制章节主题内容的Paint
+     * 注意：该函数不会触发刷新，需要在调用openBook()、showText()之前配置好
+     */
+    fun configContentPaint(config: (titlePaint: Paint) -> Unit) {
+        config(contentConfig.contentPaint)
+    }
+
+    /**
+     * 配置绘制章节标题的Paint，该函数不会触发刷新
+     * 注意：该函数不会触发刷新，需要在调用openBook()、showText()之前配置好
+     */
+    fun configTitlePaint(config: (titlePaint: Paint) -> Unit) {
+        config(contentConfig.titlePaint)
+    }
+
+    fun getContentColor() = contentConfig.contentColor
+    fun getTitleColor() = contentConfig.titleColor
+
+    /**
+     * 设置内容字体的颜色
+     */
+    fun setContentColor(color: Int) {
+        if (color == getContentColor()) return
+        contentConfig.contentPaint.color = color
+        refreshAllPages()
+    }
+
+    /**
+     * 设置标题字体的颜色
+     */
+    fun setTitleColor(color: Int) {
+        if (color == getTitleColor()) return
+        contentConfig.titlePaint.color = color
+        refreshAllPages()
+    }
+
+    /**
+     * 获取内容的字体大小
+     */
+    fun getContentSize() = contentConfig.contentPaint.textSize
+
+    /**
+     * 获取标题的字体大小
+     */
+    fun getTitleSize() = contentConfig.titlePaint.textSize
+
+    /**
      * 验证文字大小的有效性
      */
     private fun validTextSize(size: Float, isTitle: Boolean = false): Boolean {
@@ -289,9 +368,6 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
         return false
     }
-
-    fun getContentSize() = contentConfig.contentPaint.textSize
-    fun getTitleSize() = contentConfig.titlePaint.textSize
 
     /**
      * 设置正文字体大小
@@ -345,27 +421,16 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * 刷新所有ReadPage视图
+     * 配置预加载参数
+     * @param before 预加载当前章节之前的章节数
+     * @param behind 预加载当前章节之后的章节数
      */
-    private fun refreshAllPages() {
-        refreshCurPage()
-        refreshNextPage()
-        refreshPrevPage()
-    }
-
-    override fun onTocInitialized(book: BookData?, success: Boolean) {
-        if (success) {
-            post {
-                onInitSuccess()
-                refreshAllPages()
-            }
-        } else {
-            (initView as TextView).text = "加载失败"
-        }
-    }
-
-    companion object {
-        const val THE_LAST = -1         // 表示最后一页、或者最后一章节
+    fun setPreprocessParas(
+        @IntRange(from = 0) before: Int,
+        @IntRange(from = 0) behind: Int
+    ) {
+        readData.preprocessBefore = before
+        readData.preprocessBehind = behind
     }
 
 }

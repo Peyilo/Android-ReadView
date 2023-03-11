@@ -27,8 +27,8 @@ class ReadData : BitmapProvider {
     @IntRange(from = 1)
     var curPageIndex: Int = 1
         private set
-    @IntRange(from = 1) private var preLoadBefore = 1   // 预加载当前章节之前的章节
-    @IntRange(from = 1) private var preLoadBehind = 1   // 预加载当前章节之后的章节
+    @IntRange(from = 0) var preprocessBefore = 1   // 预加载当前章节之前的章节
+    @IntRange(from = 0) var preprocessBehind = 1   // 预加载当前章节之后的章节
 
     val chapCount: Int
         get() {              // 章节数
@@ -117,12 +117,12 @@ class ReadData : BitmapProvider {
         validateChapIndex(chapIndex)
         process(chapIndex)
         var i = chapIndex - 1
-        while (i > 0 && i >= chapIndex - preLoadBefore) {
+        while (i > 0 && i >= chapIndex - preprocessBefore) {
             process(i)
             i--
         }
         i = chapIndex + 1
-        while (i <= chapCount && i <= chapIndex + preLoadBehind) {
+        while (i <= chapCount && i <= chapIndex + preprocessBehind) {
             process(i)
             i++
         }

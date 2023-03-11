@@ -130,10 +130,15 @@ class ReadData : BitmapProvider {
 
     fun requestLoadAndSplit(chapIndex: Int,
                             always: Boolean = false,
-                            onFinished: ((chapData: ChapData?) -> Unit)? = null
-    ) = preprocess(chapIndex) {
-        requestLoad(it, always, false)
-        requestSplit(it, always, false, onFinished)
+                            onFinished: ((chapData: ChapData) -> Unit)? = null
+    ) {
+        preprocess(chapIndex) {
+            requestLoad(it, always, false)
+            requestSplit(it, always, false)
+        }
+        onFinished?.let {
+            onFinished(getChap(curChapIndex))
+        }
     }
 
     fun requestLoadChapters(
@@ -166,20 +171,20 @@ class ReadData : BitmapProvider {
     fun requestSplitChapters(
         chapIndex: Int,
         alwaysSplit: Boolean = false,
-        onFinished: ((chapData: ChapData?) -> Unit)? = null
+        onFinished: ((chapData: ChapData) -> Unit)? = null
     ) {
         preprocess(chapIndex) {
             requestSplit(it, alwaysSplit, false)
         }
         onFinished?.let {
-            onFinished(null)
+            onFinished(getChap(chapIndex))
         }
     }
 
     fun requestSplit(
         chapIndex: Int, alwaysSplit: Boolean = false,
         needValid: Boolean = true,
-        onFinished: ((chapData: ChapData?) -> Unit)? = null
+        onFinished: ((chapData: ChapData) -> Unit)? = null
     ) {
         if (needValid) validateChapIndex(chapIndex)
         val chapter = getChap(chapIndex)

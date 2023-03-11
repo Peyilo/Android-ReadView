@@ -9,6 +9,7 @@ import org.klee.readview.config.ContentConfig
 import org.klee.readview.entities.IndexBean
 import org.klee.readview.widget.api.BitmapProvider
 
+private const val TAG = "ContentView"
 class ContentView(context: Context, attributeSet: AttributeSet? = null)
     : View(context, attributeSet) {
 

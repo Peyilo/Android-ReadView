@@ -3,6 +3,7 @@ package org.klee.readview.widget
 import android.content.Context
 import android.os.Looper
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import org.klee.readview.widget.api.BitmapProvider
 
+private const val TAG = "PageView"
 class PageView(context: Context, attributeSet: AttributeSet? = null)
     : ViewGroup(context, attributeSet) {
 
@@ -86,6 +88,7 @@ class PageView(context: Context, attributeSet: AttributeSet? = null)
         }
         // 刷新
         if (forceRefresh || hasChanged) {
+            Log.d(TAG, "bindContent: refresh")
             if (Looper.getMainLooper().isCurrentThread) {
                 content.invalidate()        // 如果当前为主线程，就直接调用invalidate()进行刷新
             } else {

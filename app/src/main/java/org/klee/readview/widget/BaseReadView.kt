@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.PointF
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ import kotlin.math.abs
 /**
  * 负责提供多种翻页模式下的动画实现
  */
+private const val TAG = "BaseReadView"
 open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     : ViewGroup(context, attributeSet) {
 
@@ -110,15 +112,17 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
             MotionEvent.ACTION_DOWN -> {
                 upStartPointer(event.x, event.y)
                 pageDelegate.onTouch(event)
+                isMove = false
+                isPageMove = false
             }
             MotionEvent.ACTION_MOVE -> {
                 // touchSlop确定是的isMove，该标记位用来区分点击和滑动
                 if (!isMove) {
-                    isMove = abs(startPoint.x - event.x) > touchSlop || abs(startPoint.x - event.y) > touchSlop
+                    isMove = abs(startPoint.x - touchPoint.x) > touchSlop || abs(startPoint.y - touchPoint.y) > touchSlop
                 }
                 // scrollSlop确定的是isPageMove，该标记位用来确定页面是否发生了滑动
                 if (!isPageMove) {
-                    isPageMove = abs(startPoint.x - event.x) > scrollSlop || abs(startPoint.x - event.y) > scrollSlop
+                    isPageMove = abs(startPoint.x - touchPoint.x) > scrollSlop || abs(startPoint.y - touchPoint.y) > scrollSlop
                 }
                 if (isMove) {
                     if (isPageMove) {
@@ -127,6 +131,11 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                 }
             }
             MotionEvent.ACTION_UP -> {
+                Log.d(TAG, "onTouchEvent: isMove = $isMove, isPageMove = $isPageMove")
+                Log.d(TAG, "onTouchEvent: startPoint = $startPoint, touchPoint = $touchPoint")
+                if (!isMove) {
+                    performClick()
+                }
                 pageDelegate.onTouch(event)
             }
         }

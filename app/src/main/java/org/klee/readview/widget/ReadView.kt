@@ -51,7 +51,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        threadPool.shutdown()
+        threadPool.shutdownNow()
     }
 
     private fun startTask(task: Runnable) {
@@ -59,7 +59,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     override fun hasNextPage(): Boolean {
-        if (!initFinished || chapCount == 0) return false
+        if (!initFinished ||  chapCount == 0) return false
         if (!readData.hasNextChap()) {    // 最后一章节
             val chapter = readData.getChap(curChapIndex)
             return when (chapter.status) {
@@ -278,14 +278,68 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
     }
 
-    fun setTextSize(size: Float) {
-        // 关闭所有线程
-        threadPool.shutdownNow()
-        contentConfig.contentPaint.textSize = size
-        startTask {
-            // 清空已有的分页数据
-            readData.book?.clearAllPage()
-            // TODO: 处理重新分页后的分页序号
+    /**
+     * 验证文字大小的有效性
+     */
+    private fun validTextSize(size: Float, isTitle: Boolean = false): Boolean {
+        val max = if (isTitle) 180 else 150
+        val min = 25
+        if (size > min && size < max) {
+            return true
+        }
+        return false
+    }
+
+    fun getContentSize() = contentConfig.contentPaint.textSize
+    fun getTitleSize() = contentConfig.titlePaint.textSize
+
+    /**
+     * 设置正文字体大小
+     * @return 返回值为true即更改字体大小成功，反之失败
+     */
+    fun setContentSize(size: Float): Boolean {
+        if (!validTextSize(size) || getContentSize() == size)
+            return false
+        refreshWithSizeChange {
+            contentConfig.contentPaint.textSize = size
+            Log.d(TAG, "setContentSize: current contentSize = $size")
+        }
+        return true
+    }
+
+    /**
+     * 设置章节标题字体大小
+     * @return 返回值为true即更改字体大小成功，反之失败
+     */
+    fun setTitleSize(size: Float): Boolean {
+        if (!validTextSize(size, true) || getTitleSize() == size)
+            return false
+        refreshWithSizeChange {
+            contentConfig.titlePaint.textSize = size
+            Log.d(TAG, "setTitleSize: current titleSize = $size")
+        }
+        return true
+    }
+
+    private fun refreshWithSizeChange(resize: () -> Unit) {
+        if (!initFinished) return
+        val chap = readData.getChap(curChapIndex)
+        if (chap.status != ChapterStatus.FINISHED) {
+            return
+        }
+        resize()
+        val chapIndex = curChapIndex
+        val oldPageIndex = curPageIndex
+        val pagePercent = curPageIndex.toFloat() / chap.pageCount
+        // 清空已有的分页数据
+        readData.book?.clearAllPage()
+        readData.requestSplitChapters(curChapIndex) {
+            if (curChapIndex == chapIndex) {
+                var newPageIndex = (it.pageCount * pagePercent).toInt()
+                if (newPageIndex < 1) newPageIndex = 1
+                Log.d(TAG, "resize: oldPageIndex = ${oldPageIndex}, newPageIndex = $newPageIndex" )
+                readData.setProcess(chapIndex, newPageIndex)
+            }
             refreshAllPages()
         }
     }

@@ -25,8 +25,10 @@ class BookData (
 
     fun clearAllPage() {
         chapList.forEach {
-            it.clearPages()
-            it.status = ChapterStatus.NO_SPLIT
+            if (it.status == ChapterStatus.FINISHED) {
+                it.clearPages()
+                it.status = ChapterStatus.NO_SPLIT
+            }
         }
     }
 }

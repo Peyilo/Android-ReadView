@@ -74,5 +74,13 @@ class MainActivity : AppCompatActivity() {
             }
         })
         readView.openBook(SfacgLoader(591785))
+
+        readView.setOnClickListener {
+            val curContentSize = readView.getContentSize()
+            val curTitleSize = readView.getTitleSize()
+            if (readView.setContentSize(curContentSize + 2)) {
+                readView.setTitleSize(curTitleSize + 2)
+            }
+        }
     }
 }

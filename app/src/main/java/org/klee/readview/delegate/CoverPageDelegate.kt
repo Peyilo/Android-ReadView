@@ -8,7 +8,6 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import org.klee.readview.widget.BaseReadView
-import org.klee.readview.entities.PageDirection
 import kotlin.math.abs
 
 private const val TAG = "CoverPageDelegate"
@@ -18,6 +17,7 @@ private const val TAG = "CoverPageDelegate"
  */
 class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
 
+    private val shadowWidth get() = readView.shadowWidth
     private var pageDirection = PageDirection.NONE
     private var scrolledView: View? = null
 

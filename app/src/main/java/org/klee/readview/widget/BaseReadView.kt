@@ -12,8 +12,11 @@ import android.view.ViewGroup
 import org.klee.readview.config.ContentConfig
 import org.klee.readview.delegate.CoverPageDelegate
 import org.klee.readview.delegate.PageDelegate
-import org.klee.readview.entities.PageDirection
-import kotlin.math.abs
+import org.klee.readview.delegate.PageDirection
+import androidx.annotation.IntRange
+import org.klee.readview.delegate.GestureDirection
+import org.klee.readview.utils.angle
+import org.klee.readview.utils.apartFrom
 
 /**
  * 负责提供多种翻页模式下的动画实现
@@ -24,7 +27,6 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
 
     internal val contentConfig by lazy { ContentConfig() }
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-    private val scrollSlop = touchSlop
 
     internal lateinit var curPageView: PageView
     internal lateinit var prePageView: PageView
@@ -33,11 +35,16 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     var shadowWidth: Int = 15
 
     private var isMove = false
-    private var isPageMove = false
+    @IntRange(from = 0, to = 90)
+    private var horizontalScrollAngle = 45
 
     val startPoint by lazy { PointF() }         // 第一次DOWN事件的坐标
     val lastPoint by lazy { PointF() }          // 上一次触摸的坐标
     val touchPoint by lazy { PointF() }         // 当前触摸的坐标
+    var initDirection =  GestureDirection.NONE     // 本轮事件中最初的手势移动方向
+        private set
+    var lastDirection = GestureDirection.NONE      // 本轮事件中上次的手势移动方向
+        private set
 
     private var pageDelegate0: PageDelegate? = null
     private val pageDelegate: PageDelegate get() {
@@ -105,6 +112,26 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
         startPoint.set(x, y)
     }
 
+    /**
+     * 根据角度判断手势方向
+     */
+    private fun getGestureDirection(angle: Int): GestureDirection {
+        return when(angle) {
+            in  -horizontalScrollAngle..horizontalScrollAngle ->
+                GestureDirection.TO_RIGHT
+            in (180 - horizontalScrollAngle)..180 ->
+                GestureDirection.TO_LEFT
+            in -180..(-180 + horizontalScrollAngle) ->
+                GestureDirection.TO_LEFT
+            in horizontalScrollAngle..(180 - horizontalScrollAngle) ->
+                GestureDirection.DOWN
+            in (-180 + horizontalScrollAngle)..-horizontalScrollAngle ->
+                GestureDirection.UP
+            else ->
+                throw IllegalStateException("angle = $angle")
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         upTouchPoint(event)
@@ -113,30 +140,33 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                 upStartPointer(event.x, event.y)
                 pageDelegate.onTouch(event)
                 isMove = false
-                isPageMove = false
+                initDirection = GestureDirection.NONE
+                lastDirection = GestureDirection.NONE
             }
             MotionEvent.ACTION_MOVE -> {
-                // touchSlop确定是的isMove，该标记位用来区分点击和滑动
+                // touchSlop确定是的isMove，该标记位用来区分点击和滑动事件
                 if (!isMove) {
-                    isMove = abs(startPoint.x - touchPoint.x) > touchSlop || abs(startPoint.y - touchPoint.y) > touchSlop
-                }
-                // scrollSlop确定的是isPageMove，该标记位用来确定页面是否发生了滑动
-                if (!isPageMove) {
-                    isPageMove = abs(startPoint.x - touchPoint.x) > scrollSlop || abs(startPoint.y - touchPoint.y) > scrollSlop
+                    isMove = startPoint.apartFrom(touchPoint) > touchSlop
+                    if (isMove) {
+                        // 确定开始的滑动方向
+                        val angle = startPoint.angle(touchPoint)
+                        Log.d(TAG, "onTouchEvent: angle = $angle")
+                        initDirection = getGestureDirection(angle)
+                        Log.d(TAG, "onTouchEvent: initDirection = $initDirection")
+                    }
                 }
                 if (isMove) {
-                    if (isPageMove) {
-                        pageDelegate.onTouch(event)
-                    }
+                    pageDelegate.onTouch(event)
                 }
             }
             MotionEvent.ACTION_UP -> {
-                Log.d(TAG, "onTouchEvent: isMove = $isMove, isPageMove = $isPageMove")
                 Log.d(TAG, "onTouchEvent: startPoint = $startPoint, touchPoint = $touchPoint")
+                Log.d(TAG, "onTouchEvent: ${if (isMove) "滑动事件" else "点击事件"}")
                 if (!isMove) {
                     performClick()
+                } else {
+                    pageDelegate.onTouch(event)
                 }
-                pageDelegate.onTouch(event)
             }
         }
         return true
@@ -166,7 +196,8 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
      * 翻页完成以后，将会调用该函数进行子视图更新
      */
     internal open fun updateChildView(convertView: PageView,
-                                      direction: PageDirection): PageView {
+                                      direction: PageDirection
+    ): PageView {
         if (direction == PageDirection.PREV) {
             onFlipToPrev()
         }

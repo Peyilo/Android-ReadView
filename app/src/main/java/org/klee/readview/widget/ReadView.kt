@@ -11,7 +11,7 @@ import androidx.annotation.IntRange
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.entities.IndexBean
-import org.klee.readview.entities.PageDirection
+import org.klee.readview.delegate.PageDirection
 import org.klee.readview.loader.BookLoader
 import org.klee.readview.loader.NativeLoader
 import org.klee.readview.utils.invisible

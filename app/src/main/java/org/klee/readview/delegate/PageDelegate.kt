@@ -3,8 +3,6 @@ package org.klee.readview.delegate
 import android.content.Context
 import android.graphics.Canvas
 import android.view.MotionEvent
-import android.view.animation.AccelerateInterpolator
-import android.view.animation.DecelerateInterpolator
 import android.widget.Scroller
 import org.klee.readview.widget.BaseReadView
 
@@ -20,13 +18,11 @@ abstract class PageDelegate (val readView: BaseReadView) {
     protected val touchPoint get() = readView.touchPoint
     protected val lastPoint get() = readView.lastPoint
 
-    protected val shadowWidth get() = readView.shadowWidth
-
     protected val scroller by lazy { Scroller(context) }
     abstract fun onLayout()
-    abstract fun abortAnim()                                // 停止动画
-    abstract fun startAnim()                                // 开始动画
-    abstract fun onScroll(event: MotionEvent)               // 控制拖动
+    protected abstract fun abortAnim()                                // 停止动画
+    protected abstract fun startAnim()                                // 开始动画
+    protected abstract fun onScroll(event: MotionEvent)               // 控制拖动
     fun onTouch(event: MotionEvent) {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {

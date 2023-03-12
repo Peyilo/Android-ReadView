@@ -14,7 +14,7 @@ import org.klee.readview.widget.api.ReadViewCallback
 private const val TAG = "DataSource"
 class ReadData : BitmapProvider {
 
-    lateinit var contentConfig: ContentConfig
+    lateinit var contentConfig: org.klee.readview.config.ContentConfig
     var callback: ReadViewCallback? = null
 
     var book: BookData? = null

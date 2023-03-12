@@ -9,7 +9,7 @@ import org.klee.readview.entities.ChapData
 import org.klee.readview.entities.LineData
 import org.klee.readview.entities.PageData
 
-class DefaultPageFactory(private val contentConfig: ContentConfig): IPageFactory {
+class DefaultPageFactory(private val contentConfig: org.klee.readview.config.ContentConfig): IPageFactory {
 
     private val remainedWidth get() = contentConfig.contentWidth -
             contentConfig.contentPaddingLeft - contentConfig.contentPaddingRight

@@ -13,7 +13,7 @@ private const val TAG = "ContentView"
 class ContentView(context: Context, attributeSet: AttributeSet? = null)
     : View(context, attributeSet) {
 
-    lateinit var config: ContentConfig
+    lateinit var config: org.klee.readview.config.ContentConfig
     lateinit var bitmapProvider: BitmapProvider
     val indexBean by lazy { IndexBean() }
     private val bitmap get(): Bitmap {

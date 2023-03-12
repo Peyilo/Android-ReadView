@@ -10,7 +10,6 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.widget.Toast
-import org.klee.readview.config.ContentConfig
 import org.klee.readview.delegate.*
 import org.klee.readview.utils.angle
 import org.klee.readview.utils.apartFrom
@@ -22,7 +21,7 @@ private const val TAG = "BaseReadView"
 open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     : ViewGroup(context, attributeSet) {
 
-    internal val contentConfig by lazy { ContentConfig() }
+    internal val contentConfig by lazy { org.klee.readview.config.ContentConfig() }
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
     internal lateinit var curPageView: PageView

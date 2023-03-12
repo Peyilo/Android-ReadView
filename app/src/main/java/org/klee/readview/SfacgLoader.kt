@@ -1,8 +1,9 @@
-package org.klee.readview.loader
+package org.klee.readview
 
 import org.anvei.novel.api.SfacgAPI
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
+import org.klee.readview.loader.BookLoader
 
 class SfacgLoader(var novelId: Long = 0) : BookLoader {
 

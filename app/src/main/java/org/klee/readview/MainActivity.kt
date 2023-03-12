@@ -1,4 +1,4 @@
-package org.klee.readview.activity
+package org.klee.readview
 
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -8,12 +8,9 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import org.klee.readview.R
-import org.klee.readview.delegate.NoAnimPageDelegate
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import org.klee.readview.entities.ChapterStatus
-import org.klee.readview.loader.SfacgLoader
 import org.klee.readview.widget.FlipMode
 import org.klee.readview.widget.PageView
 import org.klee.readview.widget.ReadView
@@ -43,13 +40,17 @@ class MainActivity : AppCompatActivity() {
             override fun onTocInitialized(book: BookData?, success: Boolean) {
                 if (success) {
                     readView.post {
-                        Toast.makeText(applicationContext, "章节目录初始化完成！",
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            applicationContext, "章节目录初始化完成！",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 } else {
                     readView.post {
-                        Toast.makeText(applicationContext, "章节目录初始化失败！",
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            applicationContext, "章节目录初始化失败！",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
 
@@ -58,8 +59,10 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext, "分页完成！", Toast.LENGTH_SHORT).show()
             }
             override fun onLoadChap(chap: ChapData, success: Boolean) {
-                Log.d(TAG, "onLoadChap: chapter ${chap.chapIndex} " +
-                        "load ${if (success) "success" else "fail"}")
+                Log.d(
+                    TAG, "onLoadChap: chapter ${chap.chapIndex} " +
+                            "load ${if (success) "success" else "fail"}"
+                )
             }
             override fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) {
                 val header = convertView.header!! as TextView

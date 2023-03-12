@@ -5,9 +5,9 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.util.Log
-import android.view.MotionEvent
 import android.view.View
 import org.klee.readview.widget.BaseReadView
+import org.klee.readview.widget.PageView
 import kotlin.math.abs
 
 private const val TAG = "CoverPageDelegate"
@@ -15,10 +15,9 @@ private const val TAG = "CoverPageDelegate"
 /**
  * 覆盖翻页的实现
  */
-class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
+class CoverPageDelegate(readView: BaseReadView) : HorizontalPageDelegate(readView) {
 
     private val shadowWidth get() = readView.shadowWidth
-    private var pageDirection = PageDirection.NONE
     private var scrolledView: View? = null
 
     private val minFlipDistance = 40
@@ -28,8 +27,20 @@ class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
     private val gradientColors = intArrayOf(-0x71000000, 0x00000000)
     private val gradientPositions = floatArrayOf(0.0f, 1.0f)
 
-    override fun onLayout() {
+    override fun onScrollValue() {
         prevPage.scrollTo(-(readView.width + shadowWidth), 0)
+    }
+
+    override fun onInitDirectionFinished(initGestureDirection: GestureDirection): PageDirection {
+        super.onInitDirectionFinished(initGestureDirection)
+        when (initPageDirection) {
+            PageDirection.PREV ->
+                scrolledView = prevPage
+            PageDirection.NEXT ->
+                scrolledView = curPage
+            else -> Unit
+        }
+        return initPageDirection
     }
 
     override fun abortAnim() {
@@ -39,101 +50,65 @@ class CoverPageDelegate(readView: BaseReadView) : PageDelegate(readView) {
         }
     }
 
-    override fun onScroll(event: MotionEvent) {
+    override fun onMove() {
         val distance = startPoint.x - touchPoint.x
-        if (pageDirection == PageDirection.NONE) {
-            initPageDirection(distance)
-        }
         // 控制实时滑动效果
-        if (pageDirection == PageDirection.NEXT) {
-            if (distance > 0) {
-                scrolledView?.apply {
-                    scrollTo(distance.toInt(), 0)
-                }
-            }
-        } else if (pageDirection == PageDirection.PREV) {
-            if (distance < 0) {
-                scrolledView?.apply {
-                    scrollTo(width + shadowWidth + distance.toInt(), 0)
-                }
-            }
-        }
-    }
-
-    override fun startAnim() {
-        val distance = startPoint.x - touchPoint.x
-        // 处理最终翻页结果
-        if (pageDirection != PageDirection.NONE) {
-            val scrollX = scrolledView!!.scrollX
-            val dx: Int
-            // 如果滑动的距离没有超过minFlipDistance，就不进行翻页，应将页面复位
-            val endDirection: PageDirection
-            if (abs(distance) < minFlipDistance) {
-                endDirection = PageDirection.NONE
-                dx = if (pageDirection === PageDirection.NEXT) {
-                    Log.d(TAG, "startAnim: ${-scrollX}")
-                    -scrollX
-                } else {
-                    readView.width + shadowWidth - scrollX
-                }
-            } else {        // 完成翻页
-                dx = if (distance > 0) {
-                    endDirection = PageDirection.NEXT
-                    readView.width + shadowWidth - scrollX
-                } else {
-                    endDirection = PageDirection.PREV
-                    -scrollX
-                }
-            }
-            scroller.startScroll(scrollX, 0, dx, 0, animTime)
-            pageDirection = PageDirection.NONE
-            readView.invalidate()
-            // 尝试加载新的视图
-            onUpdateChildView(endDirection)
-        }
-    }
-
-    /**
-     * 根据给定的distance，确定初始滑动方向，并以此确定当前被选中的view
-     */
-    private fun initPageDirection(distance: Float) {
-        if (distance > 0 && readView.hasNextPage()) {
-            pageDirection = PageDirection.NEXT
-            scrolledView = curPage
-        } else if (distance < 0 && readView.hasPrevPage()) {
-            pageDirection = PageDirection.PREV
-            scrolledView = prevPage
-        }
-    }
-
-    /**
-     * 根据翻页方向，更新子view
-     */
-    private fun onUpdateChildView(direction: PageDirection) {
-        // 将距离当前页面最远的页面移除，再进行复用
-        when (direction) {
+        when (initPageDirection) {
             PageDirection.NEXT -> {
-                readView.apply {
-                    val convertView = readView.prePageView
-                    prePageView = curPageView
-                    curPageView = nextPageView
-                    nextPageView = readView.updateChildView(convertView, direction)
-                    removeView(convertView)
-                    nextPageView.scrollTo(0, 0)
-                    addView(nextPageView, 0)
+                if (distance > 0) {
+                    scrolledView?.apply {
+                        scrollTo(distance.toInt(), 0)
+                    }
                 }
             }
             PageDirection.PREV -> {
-                readView.apply {
-                    val convertView = nextPageView
-                    nextPageView = curPageView
-                    curPageView = prePageView
-                    prePageView = updateChildView(convertView, direction)
-                    removeView(convertView)
-                    prePageView.scrollTo(width + shadowWidth, 0)
-                    addView(prePageView)
+                if (distance < 0) {
+                    scrolledView?.apply {
+                        scrollTo(width + shadowWidth + distance.toInt(), 0)
+                    }
                 }
             }
+            else ->
+                throw IllegalStateException()
+        }
+    }
+
+    override fun onFlip(): PageDirection {
+        val distance = startPoint.x - touchPoint.x
+        // 处理最终翻页结果
+        val scrollX = scrolledView!!.scrollX
+        val dx: Int
+        // 如果滑动的距离没有超过minFlipDistance，就不进行翻页，应将页面复位
+        val endDirection: PageDirection
+        if (abs(distance) < minFlipDistance) {
+            endDirection = PageDirection.NONE
+            dx = if (initPageDirection === PageDirection.NEXT) {
+                Log.d(TAG, "startAnim: ${-scrollX}")
+                -scrollX
+            } else {
+                readView.width + shadowWidth - scrollX
+            }
+        } else {        // 完成翻页
+            dx = if (distance > 0) {
+                endDirection = PageDirection.NEXT
+                readView.width + shadowWidth - scrollX
+            } else {
+                endDirection = PageDirection.PREV
+                -scrollX
+            }
+        }
+        scroller.startScroll(scrollX, 0, dx, 0, animTime)
+        readView.invalidate()
+        return endDirection
+    }
+
+    override fun onUpdateScrollValue(pageDirection: PageDirection, pageView: PageView) {
+        // 将距离当前页面最远的页面移除，再进行复用
+        when (pageDirection) {
+            PageDirection.NEXT ->
+                pageView.scrollTo(0, 0)
+            PageDirection.PREV ->
+                pageView.scrollTo(readView.width + shadowWidth, 0)
             else -> Unit
         }
     }

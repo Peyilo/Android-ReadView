@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.klee.readview.R
+import org.klee.readview.delegate.NoAnimPageDelegate
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import org.klee.readview.entities.ChapterStatus
@@ -73,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
             }
         })
-        readView.setPreprocessParas(0, 0)
+        readView.setPageDelegate(NoAnimPageDelegate(readView))
         readView.openBook(SfacgLoader(591785))
     }
 }

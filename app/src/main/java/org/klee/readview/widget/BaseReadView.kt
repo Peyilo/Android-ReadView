@@ -9,12 +9,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.widget.Toast
 import org.klee.readview.config.ContentConfig
-import org.klee.readview.delegate.CoverPageDelegate
-import org.klee.readview.delegate.PageDelegate
-import org.klee.readview.delegate.PageDirection
-import androidx.annotation.IntRange
-import org.klee.readview.delegate.GestureDirection
+import org.klee.readview.delegate.*
 import org.klee.readview.utils.angle
 import org.klee.readview.utils.apartFrom
 
@@ -34,27 +31,38 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
 
     var shadowWidth: Int = 15
 
+    var onClickRegionListener: OnClickRegionListener? = null
+
     private var isMove = false
-    @IntRange(from = 0, to = 90)
-    private var horizontalScrollAngle = 45
 
     val startPoint by lazy { PointF() }         // 第一次DOWN事件的坐标
     val lastPoint by lazy { PointF() }          // 上一次触摸的坐标
     val touchPoint by lazy { PointF() }         // 当前触摸的坐标
-    var initDirection =  GestureDirection.NONE     // 本轮事件中最初的手势移动方向
-        private set
-    var lastDirection = GestureDirection.NONE      // 本轮事件中上次的手势移动方向
-        private set
+    private var initDirection =  PageDirection.NONE     // 本轮事件中最初的手势移动方向
 
-    private var pageDelegate0: PageDelegate? = null
+    var flipMode = FlipMode.NoAnim
+    private var tempValue: PageDelegate? = null
     private val pageDelegate: PageDelegate get() {
-        if (pageDelegate0 == null) {
-            pageDelegate0 = CoverPageDelegate(this)
+        if (tempValue == null) {
+            tempValue = createPageDelegate(flipMode)
         }
-        return pageDelegate0!!
+        return tempValue!!
     }
+
+    /**
+     * 创建一个PageDelegate
+     */
+    private fun createPageDelegate(mode: FlipMode): PageDelegate {
+        return when (mode) {
+            FlipMode.NoAnim ->
+                NoAnimPageDelegate(this)
+            FlipMode.Cover ->
+                CoverPageDelegate(this)
+        }
+    }
+
     fun setPageDelegate(pageDelegate: PageDelegate) {
-        this.pageDelegate0 = pageDelegate
+        this.tempValue = pageDelegate
     }
 
     /**
@@ -100,7 +108,7 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
             // 子view全部叠放在一起，但是最顶层的子view被设置了scrollX，所以滑出了屏幕
             child.layout(0, 0, width, height)
         }
-        pageDelegate.onLayout()
+        pageDelegate.onScrollValue()
     }
 
     private fun upTouchPoint(event: MotionEvent) {
@@ -113,23 +121,11 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     }
 
     /**
-     * 根据角度判断手势方向
+     * 判断页面是否发生了翻页
      */
-    private fun getGestureDirection(angle: Int): GestureDirection {
-        return when(angle) {
-            in  -horizontalScrollAngle..horizontalScrollAngle ->
-                GestureDirection.TO_RIGHT
-            in (180 - horizontalScrollAngle)..180 ->
-                GestureDirection.TO_LEFT
-            in -180..(-180 + horizontalScrollAngle) ->
-                GestureDirection.TO_LEFT
-            in horizontalScrollAngle..(180 - horizontalScrollAngle) ->
-                GestureDirection.DOWN
-            in (-180 + horizontalScrollAngle)..-horizontalScrollAngle ->
-                GestureDirection.UP
-            else ->
-                throw IllegalStateException("angle = $angle")
-        }
+    private fun isPageMove(): Boolean {
+        return (initDirection == PageDirection.PREV && hasPrevPage())
+                || initDirection == PageDirection.NEXT && hasNextPage()
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -140,36 +136,52 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                 upStartPointer(event.x, event.y)
                 pageDelegate.onTouch(event)
                 isMove = false
-                initDirection = GestureDirection.NONE
-                lastDirection = GestureDirection.NONE
+                initDirection = PageDirection.NONE
             }
             MotionEvent.ACTION_MOVE -> {
-                // touchSlop确定是的isMove，该标记位用来区分点击和滑动事件
                 if (!isMove) {
+                    // touchSlop确定是的isMove，该标记位用来区分点击和滑动事件
                     isMove = startPoint.apartFrom(touchPoint) > touchSlop
                     if (isMove) {
-                        // 确定开始的滑动方向
+                        // 计算滑动的角度
                         val angle = startPoint.angle(touchPoint)
                         Log.d(TAG, "onTouchEvent: angle = $angle")
-                        initDirection = getGestureDirection(angle)
-                        Log.d(TAG, "onTouchEvent: initDirection = $initDirection")
+                        initDirection = pageDelegate.onInitDirection(angle)
+                        Toast.makeText(context, "${angle}°, $initDirection", Toast.LENGTH_SHORT).show()
                     }
                 }
-                if (isMove) {
+                if (isPageMove()) {
                     pageDelegate.onTouch(event)
                 }
             }
             MotionEvent.ACTION_UP -> {
                 Log.d(TAG, "onTouchEvent: startPoint = $startPoint, touchPoint = $touchPoint")
-                Log.d(TAG, "onTouchEvent: ${if (isMove) "滑动事件" else "点击事件"}")
                 if (!isMove) {
-                    performClick()
-                } else {
+                    // 触发点击事件
+                    val xPercent = startPoint.x / width
+                    val yPercent = startPoint.y / height
+                    if (!onClickRegion(xPercent.toInt(), yPercent.toInt())) {
+                        // 如果onClickRegion()没有拦截该点击事件，就触发View的OnClickListener的回调
+                        performClick()
+                    }
+                }
+                if (isPageMove()) {
+                    // 本系列事件为滑动事件，触发滑动动画
                     pageDelegate.onTouch(event)
                 }
             }
         }
         return true
+    }
+
+    /**
+     * 点击事件回调
+     * @param xPercent 点击的位置在x轴方向上的百分比，例如xPercent=50，表示点击的位置为屏幕x轴方向上的中间
+     * @param yPercent 点击的位置在y轴方向上的百分比
+     * @return 表示是否拦截本次点击事件，如果onClickRegion()没有拦截该点击事件，就将本次点击事件转交OnClickListener处理
+     */
+    protected open fun onClickRegion(xPercent: Int, yPercent: Int): Boolean {
+        return onClickRegionListener?.onClickRegion(xPercent, yPercent) ?: false
     }
 
     override fun computeScroll() {
@@ -210,6 +222,16 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         contentConfig.destroy()
+    }
+
+    interface OnClickRegionListener {
+        /**
+         * 点击事件回调
+         * @param xPercent 点击的位置在x轴方向上的百分比，例如xPercent=50，表示点击的位置为屏幕x轴方向上的中间
+         * @param yPercent 点击的位置在y轴方向上的百分比
+         * @return 表示是否拦截本次点击事件
+         */
+        fun onClickRegion(xPercent: Int, yPercent: Int): Boolean
     }
 
 }

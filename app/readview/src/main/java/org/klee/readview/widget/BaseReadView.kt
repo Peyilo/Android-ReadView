@@ -153,7 +153,6 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                         val angle = startPoint.angle(touchPoint)
                         Log.d(TAG, "onTouchEvent: angle = $angle")
                         initDirection = pageDelegate.initDirection(angle)
-                        Toast.makeText(context, "${angle}°, $initDirection", Toast.LENGTH_SHORT).show()
                     }
                 }
                 if (isPageMove()) {

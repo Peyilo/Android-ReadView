@@ -14,6 +14,7 @@ import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.loader.SfacgLoader
+import org.klee.readview.widget.FlipMode
 import org.klee.readview.widget.PageView
 import org.klee.readview.widget.ReadView
 import org.klee.readview.widget.api.ReadViewCallback
@@ -74,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "onBitmapCreate: size = ${bitmap.byteCount / 1024} kb")
             }
         })
-        readView.setPageDelegate(NoAnimPageDelegate(readView))
+        readView.flipMode = FlipMode.Cover     // 设置翻页模式
         readView.openBook(SfacgLoader(591785))
     }
 }

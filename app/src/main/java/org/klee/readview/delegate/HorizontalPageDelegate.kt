@@ -3,7 +3,7 @@ package org.klee.readview.delegate
 import org.klee.readview.widget.BaseReadView
 import org.klee.readview.widget.PageView
 
-abstract class HorizontalPageDelegate(readView: BaseReadView): PageDelegate(readView) {
+abstract class HorizontalPageDelegate(readView: BaseReadView): PageDelegate(readView, 75) {
 
     protected var initPageDirection = PageDirection.NONE
         private set
@@ -13,7 +13,7 @@ abstract class HorizontalPageDelegate(readView: BaseReadView): PageDelegate(read
         prevPage.scrollTo(-readView.width, 0)
     }
 
-    override fun onInitDirectionFinished(initGestureDirection: GestureDirection): PageDirection {
+    override fun initPageDirection(initGestureDirection: GestureDirection): PageDirection {
         // 完成对翻页方向的初始化
         initPageDirection = when (initGestureDirection) {
             GestureDirection.TO_RIGHT ->

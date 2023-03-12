@@ -9,9 +9,10 @@ import androidx.annotation.IntRange
 import org.klee.readview.widget.BaseReadView
 
 private const val TAG = "PageDelegate"
-abstract class PageDelegate (val readView: BaseReadView) {
-
-    private val context: Context get() = readView.context
+abstract class PageDelegate (
+    val readView: BaseReadView,
+    _horizontalSlideAngle: Int = 45
+) {
 
     protected val prevPage get() = readView.prePageView
     protected val nextPage get() = readView.nextPageView
@@ -21,13 +22,12 @@ abstract class PageDelegate (val readView: BaseReadView) {
     protected val touchPoint get() = readView.touchPoint
     protected val lastPoint get() = readView.lastPoint
 
-    private var initGestureDirection = GestureDirection.NONE
-
-    protected val scroller by lazy { Scroller(context) }
-
     @IntRange(from = 0, to = 90)
-    var horizontalScrollAngle = 45
+    protected val horizontalSlideAngle = _horizontalSlideAngle
 
+    /**
+     * 该函数将会在onLayout()期间调用，用于完成PageView的scroll值的设置
+     */
     open fun onScrollValue() = Unit
 
     /**
@@ -35,15 +35,15 @@ abstract class PageDelegate (val readView: BaseReadView) {
      */
     private fun getGestureDirection(angle: Int): GestureDirection {
         return when(angle) {
-            in  -horizontalScrollAngle..horizontalScrollAngle ->
+            in  -horizontalSlideAngle..horizontalSlideAngle ->
                 GestureDirection.TO_RIGHT
-            in (180 - horizontalScrollAngle)..180 ->
+            in (180 - horizontalSlideAngle)..180 ->
                 GestureDirection.TO_LEFT
-            in -180..(-180 + horizontalScrollAngle) ->
+            in -180..(-180 + horizontalSlideAngle) ->
                 GestureDirection.TO_LEFT
-            in horizontalScrollAngle..(180 - horizontalScrollAngle) ->
+            in horizontalSlideAngle..(180 - horizontalSlideAngle) ->
                 GestureDirection.DOWN
-            in (-180 + horizontalScrollAngle)..-horizontalScrollAngle ->
+            in (-180 + horizontalSlideAngle)..-horizontalSlideAngle ->
                 GestureDirection.UP
             else ->
                 throw IllegalStateException("angle = $angle")
@@ -51,17 +51,27 @@ abstract class PageDelegate (val readView: BaseReadView) {
     }
 
     /**
-     * 初始化最初的滑动方向
+     * 根据角度推出手势方向，再完成页面滑动方向的初始化，并将页面滑动方向返回。
      */
-    fun onInitDirection(angle: Int): PageDirection {
-        initGestureDirection = getGestureDirection(angle)
-        return onInitDirectionFinished(initGestureDirection)
+    fun initDirection(angle: Int): PageDirection {
+        val initGestureDirection = getGestureDirection(angle)
+        return initPageDirection(initGestureDirection)
     }
 
-    protected open fun onInitDirectionFinished(initGestureDirection: GestureDirection) = PageDirection.NONE
+    /**
+     * ReadView将会根据返回值判断本系列滑动事件是否还需要交由PageDelegate处理，规则如下：
+     * 1. 返回值为NONE，之后的MOVE、UP事件不再交由PageDelegate处理；
+     * 2. 返回值为NEXT，ReadPage会结合hasNextPage()来判断，如果没有下一页，之后的MOVE、UP事件不再交由PageDelegate处理；
+     * 2. 返回值PREV，ReadPage会结合hasPrevPage()来判断，如果没有上一页，之后的MOVE、UP事件不再交由PageDelegate处理。
+     */
+    protected open fun initPageDirection(initGestureDirection: GestureDirection) = PageDirection.NONE
 
+    /**
+     * DOWN事件总会传入该方法，但是MOVE、UP事件传入该方法时代表可滑动，有两种情况：
+     * 1. 本轮滑动事件中initPageDirection()返回值为NEXT，且hasNextPage()返回值为true
+     * 2. 本轮滑动事件中initPageDirection()返回值为PREV，且hasPrevPage()返回值为true
+     */
     fun onTouch(event: MotionEvent) {
-        // 决定是否拦截此次事件
         val action = event.action
         if (action == MotionEvent.ACTION_DOWN) {
             abortAnim()

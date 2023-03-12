@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.util.Log
 import android.view.View
+import android.widget.Scroller
 import org.klee.readview.widget.BaseReadView
 import org.klee.readview.widget.PageView
 import kotlin.math.abs
@@ -23,6 +24,8 @@ class CoverPageDelegate(readView: BaseReadView) : HorizontalPageDelegate(readVie
     private val minFlipDistance = 40
     private val animTime = 600
 
+    private val scroller by lazy { Scroller(readView.context) }
+
     private val shadowPaint: Paint = Paint()
     private val gradientColors = intArrayOf(-0x71000000, 0x00000000)
     private val gradientPositions = floatArrayOf(0.0f, 1.0f)
@@ -31,8 +34,8 @@ class CoverPageDelegate(readView: BaseReadView) : HorizontalPageDelegate(readVie
         prevPage.scrollTo(-(readView.width + shadowWidth), 0)
     }
 
-    override fun onInitDirectionFinished(initGestureDirection: GestureDirection): PageDirection {
-        super.onInitDirectionFinished(initGestureDirection)
+    override fun initPageDirection(initGestureDirection: GestureDirection): PageDirection {
+        super.initPageDirection(initGestureDirection)
         when (initPageDirection) {
             PageDirection.PREV ->
                 scrolledView = prevPage

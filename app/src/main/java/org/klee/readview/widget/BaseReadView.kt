@@ -41,6 +41,13 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
     private var initDirection =  PageDirection.NONE     // 本轮事件中最初的手势移动方向
 
     var flipMode = FlipMode.NoAnim
+        set(value) {
+            // 翻页模式改变了
+            if (field != value && tempValue != null) {
+                tempValue = createPageDelegate(value)
+            }
+            field = value
+        }
     private var tempValue: PageDelegate? = null
     private val pageDelegate: PageDelegate get() {
         if (tempValue == null) {
@@ -146,7 +153,7 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                         // 计算滑动的角度
                         val angle = startPoint.angle(touchPoint)
                         Log.d(TAG, "onTouchEvent: angle = $angle")
-                        initDirection = pageDelegate.onInitDirection(angle)
+                        initDirection = pageDelegate.initDirection(angle)
                         Toast.makeText(context, "${angle}°, $initDirection", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -200,9 +207,9 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
 
     open fun hasPrevPage(): Boolean = true
 
-    open fun onFlipToPrev() = Unit
+    protected open fun onFlipToPrev() = Unit
 
-    open fun onFlipToNext() = Unit
+    protected open fun onFlipToNext() = Unit
 
     /**
      * 翻页完成以后，将会调用该函数进行子视图更新

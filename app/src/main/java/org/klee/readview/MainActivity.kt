@@ -5,12 +5,9 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileWriter
-import java.io.InputStreamReader
+import java.io.*
 
+private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity() {
 
     private val fileLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {

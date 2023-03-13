@@ -4,26 +4,45 @@ import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.util.regex.Pattern
 
+private const val TAG = "NativeLoader"
+private const val UTF8_BOM_PREFIX = "\uFEFF"       // ZWNBSP字符，UTF-8带BOM格式
 /**
  * 一个简单的本地小说加载器
  */
-class NativeLoader(private var file: File) : BookLoader {
+open class NativeLoader(private var file: File) : BookLoader {
 
-    private val reader: BufferedReader by lazy {
-        BufferedReader(FileReader(file))
+    /**
+     * TODO: 处理好文件编码问题
+     */
+    protected open val reader: BufferedReader by lazy {
+        BufferedReader(
+            InputStreamReader(FileInputStream(file))
+        )
     }
 
-    private val titlePattern  by lazy { Pattern.compile("(^\\s*第)(.{1,9})[章节卷集部篇回](\\s*)(.*)") }
+    val titlePatternList by lazy { ArrayList<Pattern>() }
 
     /**
      * 判断指定字符串是否为章节标题
      * @param line 需要判断的目标字符串
      */
-    private fun isTitle(line: String): Boolean {
-        return titlePattern.matcher(line).matches()
+    protected open fun isTitle(line: String): Boolean {
+        if (titlePatternList.size == 0) {
+            synchronized(titlePatternList) {
+                val titlePattern = Pattern.compile("(^\\s*第)(.{1,7})[章卷](\\s*)(.*)")
+                titlePatternList.add(titlePattern)
+            }
+        }
+        titlePatternList.forEach {
+            if (it.matcher(line).matches()) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun loadBook(): BookData {
@@ -44,13 +63,15 @@ class NativeLoader(private var file: File) : BookLoader {
                         content = stringBuilder.toString()
                     })
                 }
-
                 stringBuilder.clear()
                 break
             }
             // 跳过空白行
             if (line.isBlank())
                 continue
+            if (line.startsWith(UTF8_BOM_PREFIX)) {
+                line = line.substring(1)
+            }
             // 开始解析内容
             if (isTitle(line)) {
                 // 在第一个标题出现之前，可能会出现部分没有章节标题所属的行，将这些作为一个无标题章节

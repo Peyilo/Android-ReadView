@@ -213,8 +213,8 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         initFinished = false
         if (initView == null) {         // 配置初始化视图
             createInitView()
+            addView(initView!!)
         }
-        addView(initView!!)
         curPageView.invisible()         // 设置为不可见
         prePageView.invisible()
         nextPageView.invisible()

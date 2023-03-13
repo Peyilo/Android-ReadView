@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
 
-    <org.klee.readview.widget.ReadView
-        android:id="@+id/read_view"
+    <Button
+        android:id="@+id/internet_load"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:text="测试openBook()网络加载"/>
 
-</FrameLayout>
+    <Button
+        android:id="@+id/native_load"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="测试openBook()本地文件加载" />
+
+    <Button
+        android:id="@+id/show_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="测试showText()" />
+
+</LinearLayout>

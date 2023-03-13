@@ -30,7 +30,7 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
 
     var shadowWidth: Int = 15
 
-    var onClickRegionListener: OnClickRegionListener? = null
+    private var onClickRegionListener: OnClickRegionListener? = null
 
     private var isMove = false
 
@@ -163,8 +163,8 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
                 Log.d(TAG, "onTouchEvent: startPoint = $startPoint, touchPoint = $touchPoint")
                 if (!isMove) {
                     // 触发点击事件
-                    val xPercent = startPoint.x / width
-                    val yPercent = startPoint.y / height
+                    val xPercent = startPoint.x / width * 100
+                    val yPercent = startPoint.y / height * 100
                     if (!onClickRegion(xPercent.toInt(), yPercent.toInt())) {
                         // 如果onClickRegion()没有拦截该点击事件，就触发View的OnClickListener的回调
                         performClick()
@@ -201,9 +201,9 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
         }
     }
 
-    open fun hasNextPage() = true
+    open fun hasNextPage() = false
 
-    open fun hasPrevPage(): Boolean = true
+    open fun hasPrevPage(): Boolean = false
 
     protected open fun onFlipToPrev() = Unit
 
@@ -237,6 +237,18 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
          * @return 表示是否拦截本次点击事件
          */
         fun onClickRegion(xPercent: Int, yPercent: Int): Boolean
+    }
+
+    fun setOnClickRegionListener(listener: OnClickRegionListener) {
+        this.onClickRegionListener = listener
+    }
+
+    fun setOnClickRegionListener(listener: (xPercent: Int, yPercent: Int) -> Boolean) {
+        this.onClickRegionListener = object : OnClickRegionListener {
+            override fun onClickRegion(xPercent: Int, yPercent: Int): Boolean {
+                return listener(xPercent, yPercent)
+            }
+        }
     }
 
 }

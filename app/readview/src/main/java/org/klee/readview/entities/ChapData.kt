@@ -5,7 +5,7 @@ import androidx.annotation.IntRange
 class ChapData (
     @IntRange(from = 1)
     val chapIndex: Int,
-    val title: String,
+    val title: String = "",
     var content: String? = null
 ) : AdditionalData() {
 

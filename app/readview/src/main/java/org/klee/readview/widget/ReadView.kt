@@ -14,6 +14,7 @@ import org.klee.readview.entities.IndexBean
 import org.klee.readview.delegate.PageDirection
 import org.klee.readview.loader.BookLoader
 import org.klee.readview.loader.NativeLoader
+import org.klee.readview.loader.TextLoader
 import org.klee.readview.utils.invisible
 import org.klee.readview.utils.visible
 import org.klee.readview.widget.api.ReadViewCallback
@@ -21,6 +22,10 @@ import java.io.File
 import java.util.concurrent.Executors
 
 private const val TAG = "ReadView"
+
+/**
+ * 一个阅读界面视图，支持页眉、页脚的自定义配置。
+ */
 class ReadView(context: Context, attributeSet: AttributeSet?) :
     BaseReadView(context, attributeSet), ReadViewCallback
 {
@@ -30,9 +35,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     } }
 
     val book: BookData get() = readData.book!!
-    val chapCount get() = readData.chapCount
-    val curChapIndex get() = readData.curChapIndex
-    val curPageIndex get() = readData.curPageIndex
+    val chapCount get() = readData.chapCount            // 章节数
+    val curChapIndex get() = readData.curChapIndex      // 当前章节序号
+    val curPageIndex get() = readData.curPageIndex      // 当前分页序号
 
     private val callback: ReadViewCallback? get() = readData.callback
 
@@ -46,19 +51,29 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         nextPageView.setBitmapProvider(readData)
     }
 
+    /**
+     * 设置回调接口
+     * @param callback ReadViewCallback接口定义了几个常用的回调函数，具体信息请看ReadCallback的注释
+     */
     fun setCallback(callback: ReadViewCallback) {
         readData.callback = this.unite(callback)
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        threadPool.shutdownNow()
+        threadPool.shutdownNow()                // 清理线程池，关闭正在执行的子线程
     }
 
+    /**
+     * 往线程池里提交一个任务
+     */
     private fun startTask(task: Runnable) {
         threadPool.submit(task)
     }
 
+    /**
+     * @return 是否有下一页，该函数的返回值关系到页面是否可以翻页
+     */
     override fun hasNextPage(): Boolean {
         if (!initFinished ||  chapCount == 0) return false
         if (!readData.hasNextChap()) {    // 最后一章节
@@ -73,6 +88,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         return true
     }
 
+    /**
+     * @return 是否有上一页，该函数的返回值关系到页面是否可以翻页
+     */
     override fun hasPrevPage(): Boolean {
         if (!initFinished || chapCount == 0) return false
         if (!readData.hasPreChap()) {        // 没有上一章
@@ -87,15 +105,28 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         return true
     }
 
+    /**
+     * 每当章节序号发生了改变，就会回调该函数
+     * @param oldChapIndex 章节号发生改变之前所在章节的序号
+     * @param newChapIndex 章节号发生改变之后的新章节的序号
+     */
     private fun onChapterChange(oldChapIndex: Int, newChapIndex: Int) {
         Log.d(TAG, "onPageChange: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
         startTask {
+            // 完成预加载章节
             readData.requestLoadAndSplit(newChapIndex) {
                 refreshAllPages()
             }
         }
     }
 
+    /**
+     * 每当当前页面发生改变，就会回调该函数
+     * @param oldChapIndex 页面改变之前的章节序号
+     * @param oldPageIndex 页面改变之前的分页序号
+     * @param newChapIndex 页面改变之后的章节序号
+     * @param newPageIndex 页面改变之后的分页序号
+     */
     private fun onPageChange(oldChapIndex: Int, oldPageIndex: Int,
         newChapIndex: Int, newPageIndex: Int) {
         if (oldChapIndex != newChapIndex) {
@@ -104,6 +135,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         Log.d(TAG, "onPageChange: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
     }
 
+    /**
+     * 在这里完成章节序号、分页序号的更新操作
+     */
     override fun onFlipToPrev() {
         val oldChapIndex = curChapIndex
         val oldPageIndex = curPageIndex
@@ -111,6 +145,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         onPageChange(oldChapIndex, oldPageIndex, curChapIndex, curPageIndex)
     }
 
+    /**
+     * 在这里完成章节序号、分页序号的更新操作
+     */
     override fun onFlipToNext() {
         val oldChapIndex = curChapIndex
         val oldPageIndex = curPageIndex
@@ -195,6 +232,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         initFinished = true
     }
 
+    /**
+     * 当章节目录完成初始化，需要根据初始化结果完成视图的刷新
+     */
     override fun onTocInitialized(book: BookData?, success: Boolean) {
         if (success) {
             post {
@@ -208,6 +248,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     /**
      * 根据给定的BookLoader，加载并显示书籍的内容
+     * @param loader 小说加载器
+     * @param chapIndex 打开的章节序号，默认值为1
+     * @param pageIndex 打开的页面序号，默认值为1
      */
     fun openBook(
         loader: BookLoader,
@@ -233,7 +276,10 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * 使用默认的本地书籍加载器，加载并显示书籍的内容
+     * 从本地文件中加载小说内容
+     * @param file 文本文件
+     * @param chapIndex 打开的章节序号，默认值为1
+     * @param pageIndex 打开的页面序号，默认值为1
      */
     fun openBook(
         file: File,
@@ -244,13 +290,15 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * TODO: 显示指定的字符串
+     * 显示指定的字符串
+     * @param text 要显示的字符串
+     * @param pageIndex 打开的页面序号，默认值为1
      */
     fun showText(
         text: String,
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
-
+        openBook(TextLoader(text), 1, pageIndex)
     }
 
     /**
@@ -311,6 +359,48 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
+     * @return 是否有下一章
+     */
+    fun hasNextChap() = readData.hasNextChap()
+
+    /**
+     * @return 是否有上一章
+     */
+    fun hasPrevChap() = readData.hasPreChap()
+
+    /**
+     * 跳转到下一章节
+     * @return 为true表示跳转成功，否则跳转失败
+     */
+    fun nextChap(): Boolean {
+        if (hasNextChap()) {
+            setProcess(curChapIndex + 1, 1)
+            return true
+        }
+        return false
+    }
+
+    /**
+     * 跳转到上一章节
+     * @return 为true表示跳转成功，否则跳转失败
+     */
+    fun prevChap(): Boolean {
+        if (hasPrevChap()) {
+            setProcess(curChapIndex - 1, 1)
+            return true
+        }
+        return false
+    }
+
+    fun nextPage(): Boolean {
+        return false
+    }
+
+    fun prevPage(): Boolean {
+        return false
+    }
+
+    /**
      * 配置绘制章节主题内容的Paint
      * 注意：该函数不会触发刷新，需要在调用openBook()、showText()之前配置好
      */
@@ -326,7 +416,14 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         config(contentConfig.titlePaint)
     }
 
+    /**
+     * 获取章节主体内容的颜色
+     */
     fun getContentColor() = contentConfig.contentColor
+
+    /**
+     * 获取章节标题的颜色
+     */
     fun getTitleColor() = contentConfig.titleColor
 
     /**
@@ -397,6 +494,11 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         return true
     }
 
+    /**
+     * 如果有影响ContentView的布局的参数发生了变换，可以通过本函数进行来重新分页，并刷新视图
+     * 例如：字体大小发生了变化、章节标题与章节内容的间隔发生变化等影响布局的参数变化
+     * @param resize 再该闭包内完成相关参数的设置
+     */
     private fun refreshWithSizeChange(resize: () -> Unit) {
         if (!initFinished) return
         val chap = readData.getChap(curChapIndex)
@@ -421,7 +523,9 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * 配置预加载参数
+     * 设置预加载参数
+     * 例如：当before=1，after=2时，每次加载指定章节时，会额外检查前一章节和后两章节是否完成了加载和分页，
+     * 如果没有就会完成预加载以及预分页
      * @param before 预加载当前章节之前的章节数
      * @param behind 预加载当前章节之后的章节数
      */

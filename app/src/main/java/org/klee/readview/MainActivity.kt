@@ -80,5 +80,6 @@ class MainActivity : AppCompatActivity() {
         })
         readView.flipMode = FlipMode.Cover     // 设置翻页模式
         readView.openBook(SfacgLoader(591785))
+        // readView.showText("Hello world!")
     }
 }

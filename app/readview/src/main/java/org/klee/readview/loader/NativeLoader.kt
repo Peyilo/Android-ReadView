@@ -37,7 +37,14 @@ class NativeLoader(private var file: File) : BookLoader {
             line = reader.readLine()
             if (line == null) {
                 // 处理剩余内容
-                chap?.content = stringBuilder.toString()
+                if (firstChapInitialized) {
+                    chap?.content = stringBuilder.toString()
+                } else if (stringBuilder.isNotEmpty()) {
+                    bookData.addChapter(ChapData(chapIndex).apply {
+                        content = stringBuilder.toString()
+                    })
+                }
+
                 stringBuilder.clear()
                 break
             }

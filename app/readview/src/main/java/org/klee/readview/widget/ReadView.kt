@@ -265,6 +265,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         prepareInit()
         startTask {
             readData.loadBook()        // load toc
+            // TODO： 处理加载结果为null的情况
             readData.requestLoadChapters(chapIndex, alwaysLoad = true)
             post {
                 readData.requestSplitChapters(chapIndex) {

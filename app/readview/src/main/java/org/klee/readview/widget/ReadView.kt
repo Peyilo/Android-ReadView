@@ -393,14 +393,6 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         return false
     }
 
-    fun nextPage(): Boolean {
-        return false
-    }
-
-    fun prevPage(): Boolean {
-        return false
-    }
-
     /**
      * 配置绘制章节主题内容的Paint
      * 注意：该函数不会触发刷新，需要在调用openBook()、showText()之前配置好

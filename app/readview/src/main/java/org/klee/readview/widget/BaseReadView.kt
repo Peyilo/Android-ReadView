@@ -9,7 +9,6 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import android.widget.Toast
 import org.klee.readview.delegate.*
 import org.klee.readview.utils.angle
 import org.klee.readview.utils.apartFrom
@@ -222,6 +221,30 @@ open class BaseReadView(context: Context, attributeSet: AttributeSet?)
             onFlipToNext()
         }
         return convertView
+    }
+
+    /**
+     * 通过函数调用来翻向下一页
+     * @return 是否成功翻页
+     */
+    fun nextPage(): Boolean {
+        if (hasNextPage()) {
+            pageDelegate.nextPage()
+            return true
+        }
+        return false
+    }
+
+    /**
+     * 通过函数调用来翻向上一页
+     * @return 是否成功翻页
+     */
+    fun prevPage(): Boolean {
+        if (hasPrevPage()) {
+            pageDelegate.prevPage()
+            return true
+        }
+        return false
     }
 
     override fun onDetachedFromWindow() {

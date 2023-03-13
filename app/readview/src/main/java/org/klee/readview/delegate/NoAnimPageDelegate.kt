@@ -26,4 +26,14 @@ class NoAnimPageDelegate(readView: BaseReadView) : HorizontalPageDelegate(readVi
             PageDirection.NONE
         }
     }
+
+    override fun startAnim(pageDirection: PageDirection) {
+        when (pageDirection) {
+            PageDirection.NEXT ->
+                onUpdateChildView(pageDirection)
+            PageDirection.PREV ->
+                onUpdateChildView(pageDirection)
+            else -> Unit
+        }
+    }
 }

@@ -9,5 +9,7 @@ class SlidePageDelegate(readView: BaseReadView): HorizontalPageDelegate(readView
 
     }
 
-
+    override fun startAnim(pageDirection: PageDirection) {
+        TODO("Not yet implemented")
+    }
 }

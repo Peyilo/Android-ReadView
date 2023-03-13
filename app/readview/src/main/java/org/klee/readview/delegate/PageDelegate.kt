@@ -90,6 +90,8 @@ abstract class PageDelegate (
 
     protected open fun onFlip(): PageDirection = PageDirection.NONE   // 开始动画
 
+    protected abstract fun startAnim(pageDirection: PageDirection)
+
     protected open fun onMove() = Unit                                  // 控制拖动
 
     protected open fun onUpdateChildView(direction: PageDirection) = Unit
@@ -97,5 +99,15 @@ abstract class PageDelegate (
     open fun computeScrollOffset() = Unit
 
     open fun dispatchDraw(canvas: Canvas) = Unit
+
+    fun nextPage() {
+        abortAnim()
+        startAnim(PageDirection.NEXT)
+    }
+
+    fun prevPage() {
+        abortAnim()
+        startAnim(PageDirection.PREV)
+    }
 
 }

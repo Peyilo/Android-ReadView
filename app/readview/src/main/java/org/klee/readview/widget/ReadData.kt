@@ -14,7 +14,7 @@ import org.klee.readview.widget.api.ReadViewCallback
 private const val TAG = "DataSource"
 class ReadData : BitmapProvider {
 
-    lateinit var contentConfig: org.klee.readview.config.ContentConfig
+    lateinit var contentConfig: ContentConfig
     var callback: ReadViewCallback? = null
 
     var book: BookData? = null
@@ -147,7 +147,7 @@ class ReadData : BitmapProvider {
         requestLoad(it, alwaysLoad, false)
     }
 
-    fun requestLoad(
+    private fun requestLoad(
         chapIndex: Int, alwaysLoad: Boolean = false,
         needValid: Boolean = true
     ) {
@@ -181,7 +181,7 @@ class ReadData : BitmapProvider {
         }
     }
 
-    fun requestSplit(
+    private fun requestSplit(
         chapIndex: Int, alwaysSplit: Boolean = false,
         needValid: Boolean = true,
         onFinished: ((chapData: ChapData) -> Unit)? = null

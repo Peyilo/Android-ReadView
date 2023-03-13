@@ -50,14 +50,10 @@ class ReadActivity : AppCompatActivity() {
         readView.setOnClickRegionListener { xPercent, _ ->
             when (xPercent) {
                 in 0..30 -> {
-                    val res = readView.prevChap()
-                    Toast.makeText(applicationContext, "上一章, $res", Toast.LENGTH_SHORT).show()
-                    res
+                    readView.prevPage()
                 }
                 in 70..100 -> {
-                    val res = readView.nextChap()
-                    Toast.makeText(applicationContext, "下一章, $res", Toast.LENGTH_SHORT).show()
-                    res
+                    readView.nextPage()
                 }
                 else -> false
             }

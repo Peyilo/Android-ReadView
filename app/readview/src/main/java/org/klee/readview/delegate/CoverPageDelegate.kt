@@ -116,6 +116,32 @@ class CoverPageDelegate(readView: BaseReadView) : HorizontalPageDelegate(readVie
         }
     }
 
+    override fun startAnim(pageDirection: PageDirection) {
+        val startX: Int
+        val dx: Int
+        when (pageDirection) {
+            PageDirection.NEXT -> {
+                scrolledView = curPage
+                startX = 0
+                dx = readView.width + shadowWidth
+                Log.d(TAG, "startAnim: startX = $startX, dx = $dx")
+                scroller.startScroll(startX, 0, dx, 0, animTime)
+                readView.invalidate()
+                onUpdateChildView(pageDirection)
+            }
+            PageDirection.PREV -> {
+                scrolledView = prevPage
+                startX = readView.width + shadowWidth
+                dx = -(readView.width + shadowWidth)
+                Log.d(TAG, "startAnim: startX = $startX, dx = $dx")
+                scroller.startScroll(startX, 0, dx, 0, animTime)
+                readView.invalidate()
+                onUpdateChildView(pageDirection)
+            }
+            else -> Unit
+        }
+    }
+
     override fun computeScrollOffset() {
         if (scroller.computeScrollOffset()) {
             scrolledView!!.scrollTo(scroller.currX, scroller.currY)

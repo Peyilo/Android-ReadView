@@ -22,8 +22,8 @@ class ContentConfig {
         private set
 
     /*******- contentView的padding参数 -********/
-    var contentPaddingLeft = 40F
-    var contentPaddingRight = 40F
+    var contentPaddingLeft = 60F
+    var contentPaddingRight = 60F
     var contentPaddingTop = 20F
     var contentPaddingBottom = 20F
 
@@ -47,7 +47,7 @@ class ContentConfig {
     }
 
     val contentPaint: Paint by lazy { Paint().apply {
-        textSize = 54F
+        textSize = 56F
         color = Color.parseColor("#2B2B2B")
         flags = Paint.ANTI_ALIAS_FLAG
     } }
@@ -73,11 +73,11 @@ class ContentConfig {
     val loadingColor get() = loadingPaint.color
 
     /************** - contentView内部尺寸参数 - *****************/
-    val lineOffset get() = contentPaint.measureText("来自") // 段落首行的偏移
-    var titleMargin = 150F                                      // 章节标题与章节正文的间距
+    val lineOffset get() = contentPaint.measureText("测试") // 段落首行的偏移
+    var titleMargin = 160F                                      // 章节标题与章节正文的间距
     var textMargin = 0F                                         // 字符间隔
-    var lineMargin = 25F                                        // 行间隔
-    var paraMargin = 35F                                        // 段落的额外间隔
+    var lineMargin = 30F                                        // 行间隔
+    var paraMargin = 20F                                        // 段落的额外间隔
 
     private var bgBitmap: Bitmap? = null
 

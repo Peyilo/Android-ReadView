@@ -16,6 +16,6 @@ interface BookLoader {
     /**
      * 加载章节内容
      */
-    fun loadChapter(chapData: ChapData)
+    fun loadChapter(chapData: ChapData) = Unit
 
 }

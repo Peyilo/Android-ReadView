@@ -2,6 +2,7 @@ package org.klee.readview.loader
 
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
+import org.klee.readview.widget.ReadMode
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -99,8 +100,4 @@ open class NativeLoader(private var file: File) : BookLoader {
         return bookData
     }
 
-    /**
-     * 在loadBook()函数中，章节内容也已经完成了加载，所以无需再做处理
-     */
-    override fun loadChapter(chapData: ChapData) = Unit
 }

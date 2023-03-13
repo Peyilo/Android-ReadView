@@ -2,16 +2,19 @@ package org.klee.readview.widget
 
 import android.content.Context
 import android.graphics.Paint
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.IntRange
+import org.klee.readview.delegate.PageDirection
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.entities.IndexBean
-import org.klee.readview.delegate.PageDirection
 import org.klee.readview.loader.BookLoader
 import org.klee.readview.loader.NativeLoader
 import org.klee.readview.loader.TextLoader
@@ -43,6 +46,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     private var initView: View? = null
     private var initFinished = false
+
+    private val myHandler by lazy {
+        Looper.prepare()
+        Looper.loop()
+        Handler(Looper.getMainLooper()!!)
+    }
 
     override fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
         super.initPage(initializer)
@@ -235,15 +244,15 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     /**
      * 当章节目录完成初始化，需要根据初始化结果完成视图的刷新
      */
-    override fun onTocInitialized(book: BookData?, success: Boolean) {
-        if (success) {
-            post {
-                onInitSuccess()
-                refreshAllPages()
-            }
-        } else {
-            (initView as TextView).text = "加载失败"
+    override fun onTocInitSuccess(book: BookData) {
+        post {
+            onInitSuccess()
+            refreshAllPages()
         }
+    }
+
+    override fun onTocInitFailed(e: Exception) {
+        (initView as TextView).text = "加载失败"
     }
 
     /**
@@ -264,14 +273,15 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         readData.setProcess(chapIndex, pageIndex)
         prepareInit()
         startTask {
-            readData.loadBook()        // load toc
-            // TODO： 处理加载结果为null的情况
-            readData.requestLoadChapters(chapIndex, alwaysLoad = true)
-            post {
-                readData.requestSplitChapters(chapIndex) {
-                    refreshAllPages()
+            val initResult = readData.loadBook()        // load toc
+            if (initResult) {
+                readData.requestLoadChapters(chapIndex, alwaysLoad = true)
+                post {
+                    readData.requestSplitChapters(chapIndex) {
+                        refreshAllPages()
+                    }
+                    callback?.onInitialized(this@ReadView.book)
                 }
-                callback?.onInitialized(this.book)
             }
         }
     }

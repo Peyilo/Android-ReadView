@@ -11,7 +11,9 @@ interface ReadViewCallback {
      * 当章节目录完成初始化时的回调
      * 注意：该方法会在子线程中执行，如果涉及到UI操作，请利用post()在主线程执行
      */
-    fun onTocInitialized(book: BookData?, success: Boolean) = Unit
+    fun onTocInitSuccess(book: BookData) = Unit
+
+    fun onTocInitFailed(e: Exception) = Unit
 
     /**
      * 当章节目录完成初始化、章节内容完成加载以及分页、刷新视图以后，会回调该函数
@@ -30,9 +32,14 @@ interface ReadViewCallback {
     fun onBitmapCreate(bitmap: Bitmap) = Unit
 
     fun unite(callback: ReadViewCallback): ReadViewCallback = object : ReadViewCallback {
-        override fun onTocInitialized(book: BookData?, success: Boolean) {
-            this@ReadViewCallback.onTocInitialized(book, success)
-            callback.onTocInitialized(book, success)
+        override fun onTocInitSuccess(book: BookData) {
+            this@ReadViewCallback.onTocInitSuccess(book)
+            this.onTocInitSuccess(book)
+        }
+
+        override fun onTocInitFailed(e: Exception) {
+            this@ReadViewCallback.onTocInitFailed(e)
+            callback.onTocInitFailed(e)
         }
 
         override fun onInitialized(book: BookData) {

@@ -51,12 +51,17 @@ class ReadData : BitmapProvider {
         return book!!.getChapter(chapIndex)
     }
 
-    fun loadBook() {
-        try {
+    fun loadBook(): Boolean {
+        return try {
             book = bookLoader.loadBook()
-            callback?.onTocInitialized(book!!, true)
+            if (book!!.isEmpty()) {
+                book!!.addChapter(ChapData(1, "无内容"))
+            }
+            callback?.onTocInitSuccess(book!!)
+            true
         } catch (e: Exception) {
-            callback?.onTocInitialized(null, false)
+            callback?.onTocInitFailed(e)
+            false
         }
     }
 

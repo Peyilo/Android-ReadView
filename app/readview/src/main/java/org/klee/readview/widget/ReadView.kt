@@ -47,6 +47,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
 
     private var initView: View? = null
     private var initFinished = false
+    private var attached = false
 
     private val myHandler by lazy {
         Handler(Looper.getMainLooper())
@@ -67,9 +68,20 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         readData.userCallback = callback
     }
 
+    /**
+     * 注意：只有在执行本方法之后，view的post()提交的任务才会执行，否则可能会被忽略
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        attached = true
+        Log.d(TAG, "onAttachedToWindow: attached")
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         threadPool.shutdownNow()                // 清理线程池，关闭正在执行的子线程
+        attached = false
+        Log.d(TAG, "onDetachedFromWindow: detached")
     }
 
     /**
@@ -246,10 +258,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             initView = null
             initFinished = true
         }
+        Log.d(TAG, "onTocInitSuccess: ${book.chapCount}")
     }
 
     override fun onTocInitFailed(e: Exception) {
         (initView as TextView).text = "加载失败"
+        Log.d(TAG, "onTocInitFailed: $e")
     }
 
     /**
@@ -273,9 +287,13 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             val initResult = readData.loadBook()        // load toc
             if (initResult) {
                 readData.requestLoadChapters(chapIndex, alwaysLoad = true)
-                myHandler.post {
+                // 章节分页依赖于view的宽高、所以需要在post()中执行
+                // 而post()依赖于window的attach状态，所以需要等待attached置为true
+                while (!attached) {}
+                post {
                     readData.requestSplitChapters(chapIndex) {
                         refreshAllPages()
+                        Log.d(TAG, "openBook: curPageCount = ${it.pageCount}")
                     }
                     viewCallback.onInitFinished(this.book)
                     userCallback?.onInitFinished(this.book)

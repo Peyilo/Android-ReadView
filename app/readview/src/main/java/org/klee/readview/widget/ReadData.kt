@@ -1,6 +1,7 @@
 package org.klee.readview.widget
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.annotation.IntRange
 import org.klee.readview.config.ContentConfig
 import org.klee.readview.entities.*
@@ -205,12 +206,16 @@ class ReadData : BitmapProvider {
         val chapter = getChap(chapIndex)
         synchronized(chapter) {
             val status = chapter.status
+            Log.d(TAG, "requestSplit: $status")
             if (status == ChapterStatus.NO_LOAD || status == ChapterStatus.IS_LOADING) {
                 throw IllegalStateException("Chapter${chapIndex} 当前状态为 ${status}，无法分页!")
             }
             if (alwaysSplit || status == ChapterStatus.NO_SPLIT) {
                 chapter.status = ChapterStatus.IS_SPLITTING
-                pageFactory.splitPage(chapter)
+                val splitResult = pageFactory.splitPage(chapter)
+                if (!splitResult) {
+                    throw IllegalStateException("splitPage failed")
+                }
                 chapter.status = ChapterStatus.FINISHED
                 onFinished?.let { it(chapter) }
             }

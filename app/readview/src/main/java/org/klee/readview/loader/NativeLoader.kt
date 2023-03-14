@@ -45,7 +45,7 @@ open class NativeLoader(private var file: File) : BookLoader {
         return false
     }
 
-    override fun loadBook(): BookData {
+    override fun initToc(): BookData {
         val bookData = BookData()
         var chapIndex = 1
         val stringBuilder = StringBuilder()

@@ -5,11 +5,11 @@ import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import org.klee.readview.loader.BookLoader
 
-class SfacgLoader(var novelId: Long = 0) : BookLoader {
+class SfacgLoader(private var novelId: Long = 0) : BookLoader {
 
     private val api = SfacgAPI()
 
-    override fun loadBook(): BookData {
+    override fun initToc(): BookData {
         val book = BookData()
         val novelHomeJson = api.getNovelHomeJson(novelId)
         book.apply {                                // 加载小说基本信息

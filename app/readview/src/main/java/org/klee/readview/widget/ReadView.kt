@@ -284,7 +284,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         readData.setProcess(chapIndex, pageIndex)
         prepareInit()
         startTask {
-            val initResult = readData.loadBook()        // load toc
+            val initResult = readData.requestInitToc()        // load toc
             if (initResult) {
                 readData.requestLoadChapters(chapIndex, alwaysLoad = true)
                 // 章节分页依赖于view的宽高、所以需要在post()中执行

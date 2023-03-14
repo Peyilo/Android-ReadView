@@ -11,7 +11,7 @@ interface BookLoader {
     /**
      * 完成小说基本信息、目录信息的加载
      */
-    fun loadBook(): BookData
+    fun initToc(): BookData
 
     /**
      * 加载章节内容

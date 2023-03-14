@@ -15,53 +15,63 @@ import org.klee.readview.widget.api.ReadViewCallback
 private const val TAG = "DataSource"
 class ReadData : BitmapProvider {
 
-    lateinit var contentConfig: ContentConfig
-    var userCallback: ReadViewCallback? = null
-    lateinit var viewCallBack: ReadViewCallback
+    lateinit var contentConfig: ContentConfig           // ContentView的配置信息
+    var userCallback: ReadViewCallback? = null          // 用户设置的回调
+    lateinit var viewCallBack: ReadViewCallback         // ReadView内部的回调
 
     var book: BookData? = null
     lateinit var bookLoader: BookLoader
     private val pageFactory get() = contentConfig.getPageFactory()
 
     @IntRange(from = 1)
-    var curChapIndex: Int = 1
+    var curChapIndex: Int = 1                       // 当前章节序号
         private set
     @IntRange(from = 1)
-    var curPageIndex: Int = 1
+    var curPageIndex: Int = 1                       // 当前分页序号
         private set
-    @IntRange(from = 0) var preprocessBefore = 1   // 预加载当前章节之前的章节
-    @IntRange(from = 0) var preprocessBehind = 1   // 预加载当前章节之后的章节
+    @IntRange(from = 0) var preprocessBefore = 1    // 预加载当前章节之前的章节
+    @IntRange(from = 0) var preprocessBehind = 1    // 预加载当前章节之后的章节
 
-    val chapCount: Int
-        get() {              // 章节数
+    val chapCount: Int                              // 章节数
+        get() {
             book?.let {
                 return book!!.chapCount
             }
             return 0
         }
 
+    /**
+     * 设置章节、分页序号，该方法不会刷新页面
+     */
     fun setProcess(curChapIndex: Int, curPageIndex: Int) {
         this.curChapIndex = curChapIndex
         this.curPageIndex = curPageIndex
     }
 
     /**
-     * 获取指定下标的章节
+     * 获取指定序号的章节
      */
     fun getChap(@IntRange(from = 1) chapIndex: Int): ChapData {
         validateChapIndex(chapIndex)
         return book!!.getChapter(chapIndex)
     }
 
-    fun loadBook(): Boolean {
+    /**
+     * 当BookData对象加载完毕，如果章节数为空，将会调用该方法获取一个附带有”提示空白“内容的章节
+     */
+    private fun createEmptyChap(): ChapData = ChapData(1).apply {
+        content = "内容为空"
+    }
+
+    /**
+     * 请求初始化小说章节目录信息
+     * @return 是否初始化成功
+     */
+    fun requestInitToc(): Boolean {
         return try {
-            val book = bookLoader.loadBook()
+            val book = bookLoader.initToc()
             if (book.isEmpty()) {
-                book.addChapter(
-                    ChapData(1).apply {
-                        content = "内容为空"
-                    }
-                )
+                book.addChapter(createEmptyChap())
             }
             this.book = book
             viewCallBack.onTocInitSuccess(book)

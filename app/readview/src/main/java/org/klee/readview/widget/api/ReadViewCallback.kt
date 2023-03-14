@@ -19,7 +19,7 @@ interface ReadViewCallback {
      * 当章节目录完成初始化、章节内容完成加载以及分页、刷新视图以后，会回调该函数
      * 该方法会在主线程执行
      */
-    fun onInitialized(book: BookData) = Unit
+    fun onInitFinished(book: BookData) = Unit
 
     /**
      * 加载章节完成的回调，注意：该函数处于子线程中
@@ -30,37 +30,5 @@ interface ReadViewCallback {
     fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) = Unit
 
     fun onBitmapCreate(bitmap: Bitmap) = Unit
-
-    fun unite(callback: ReadViewCallback): ReadViewCallback = object : ReadViewCallback {
-        override fun onTocInitSuccess(book: BookData) {
-            this@ReadViewCallback.onTocInitSuccess(book)
-            this.onTocInitSuccess(book)
-        }
-
-        override fun onTocInitFailed(e: Exception) {
-            this@ReadViewCallback.onTocInitFailed(e)
-            callback.onTocInitFailed(e)
-        }
-
-        override fun onInitialized(book: BookData) {
-            this@ReadViewCallback.onInitialized(book)
-            callback.onInitialized(book)
-        }
-
-        override fun onLoadChap(chap: ChapData, success: Boolean) {
-            this@ReadViewCallback.onLoadChap(chap, success)
-            callback.onLoadChap(chap, success)
-        }
-
-        override fun onUpdatePage(convertView: PageView, newChap: ChapData, newPageIndex: Int) {
-            this@ReadViewCallback.onUpdatePage(convertView, newChap, newPageIndex)
-            callback.onUpdatePage(convertView, newChap, newPageIndex)
-        }
-
-        override fun onBitmapCreate(bitmap: Bitmap) {
-            this@ReadViewCallback.onBitmapCreate(bitmap)
-            callback.onBitmapCreate(bitmap)
-        }
-    }
 
 }

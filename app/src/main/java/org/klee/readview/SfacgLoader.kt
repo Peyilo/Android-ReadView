@@ -4,7 +4,6 @@ import org.anvei.novel.api.SfacgAPI
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
 import org.klee.readview.loader.BookLoader
-import org.klee.readview.widget.ReadMode
 
 class SfacgLoader(var novelId: Long = 0) : BookLoader {
 

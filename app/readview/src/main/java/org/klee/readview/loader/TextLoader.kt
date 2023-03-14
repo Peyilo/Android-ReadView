@@ -2,7 +2,6 @@ package org.klee.readview.loader
 
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapData
-import org.klee.readview.widget.ReadMode
 
 class TextLoader(private val text: String) : BookLoader {
 

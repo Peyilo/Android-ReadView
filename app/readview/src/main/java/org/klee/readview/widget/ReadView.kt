@@ -9,12 +9,11 @@ import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.IntRange
-import org.klee.readview.delegate.PageDirection
 import org.klee.readview.entities.BookData
 import org.klee.readview.entities.ChapterStatus
 import org.klee.readview.entities.IndexBean
+import org.klee.readview.delegate.PageDirection
 import org.klee.readview.loader.BookLoader
 import org.klee.readview.loader.NativeLoader
 import org.klee.readview.loader.TextLoader
@@ -35,6 +34,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private val threadPool by lazy { Executors.newFixedThreadPool(10) }
     private val readData by lazy { ReadData().apply {
         this.contentConfig = this@ReadView.contentConfig
+        this.viewCallBack = this@ReadView
     } }
 
     val book: BookData get() = readData.book!!
@@ -42,15 +42,14 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     val curChapIndex get() = readData.curChapIndex      // 当前章节序号
     val curPageIndex get() = readData.curPageIndex      // 当前分页序号
 
-    private val callback: ReadViewCallback? get() = readData.callback
+    private val viewCallback get() = readData.viewCallBack
+    private val userCallback get() = readData.userCallback
 
     private var initView: View? = null
     private var initFinished = false
 
     private val myHandler by lazy {
-        Looper.prepare()
-        Looper.loop()
-        Handler(Looper.getMainLooper()!!)
+        Handler(Looper.getMainLooper())
     }
 
     override fun initPage(initializer: (pageView: PageView, position: Int) -> Unit) {
@@ -65,7 +64,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
      * @param callback ReadViewCallback接口定义了几个常用的回调函数，具体信息请看ReadCallback的注释
      */
     fun setCallback(callback: ReadViewCallback) {
-        readData.callback = this.unite(callback)
+        readData.userCallback = callback
     }
 
     override fun onDetachedFromWindow() {
@@ -179,7 +178,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         }
         indexBean?.let {
             convertView.bindContent(indexBean.chapIndex, indexBean.pageIndex)
-            callback?.onUpdatePage(
+            viewCallback.onUpdatePage(
+                convertView,
+                readData.getChap(indexBean.chapIndex),
+                indexBean.pageIndex
+            )
+            userCallback?.onUpdatePage(
                 convertView,
                 readData.getChap(indexBean.chapIndex),
                 indexBean.pageIndex
@@ -230,24 +234,17 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     }
 
     /**
-     * 当目录加载完，需要调用该函数显示章节内容
-     */
-    private fun onInitSuccess() {
-        curPageView.visible()
-        prePageView.visible()
-        nextPageView.visible()
-        removeView(initView)
-        initView = null
-        initFinished = true
-    }
-
-    /**
-     * 当章节目录完成初始化，需要根据初始化结果完成视图的刷新
+     * 当章节目录成功完成初始化，需要根据初始化结果完成视图的刷新
+     * 以显示章节内容
      */
     override fun onTocInitSuccess(book: BookData) {
-        post {
-            onInitSuccess()
-            refreshAllPages()
+        myHandler.post {
+            curPageView.visible()
+            prePageView.visible()
+            nextPageView.visible()
+            removeView(initView)
+            initView = null
+            initFinished = true
         }
     }
 
@@ -267,8 +264,8 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
         readData.bookLoader = loader
-        if (readData.callback == null) {        // 如果没设置回调，就不需要unite
-            readData.callback = this
+        if (readData.userCallback == null) {        // 如果没设置回调，就不需要unite
+            readData.userCallback = this
         }
         readData.setProcess(chapIndex, pageIndex)
         prepareInit()
@@ -276,11 +273,12 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             val initResult = readData.loadBook()        // load toc
             if (initResult) {
                 readData.requestLoadChapters(chapIndex, alwaysLoad = true)
-                post {
+                myHandler.post {
                     readData.requestSplitChapters(chapIndex) {
                         refreshAllPages()
                     }
-                    callback?.onInitialized(this@ReadView.book)
+                    viewCallback.onInitFinished(this.book)
+                    userCallback?.onInitFinished(this.book)
                 }
             }
         }
@@ -318,7 +316,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
     private fun refreshCurPage() {
         readData.apply {
             curPageView.bindContent(curChapIndex, curPageIndex)
-            callback?.onUpdatePage(
+            userCallback?.onUpdatePage(
                 curPageView,
                 getChap(curChapIndex),
                 curPageIndex
@@ -334,7 +332,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             readData.apply {
                 val prevIndexBean = getPrevIndexBean()
                 prePageView.bindContent(prevIndexBean.chapIndex, prevIndexBean.pageIndex)
-                callback?.onUpdatePage(
+                userCallback?.onUpdatePage(
                     prePageView,
                     getChap(prevIndexBean.chapIndex),
                     prevIndexBean.pageIndex
@@ -351,7 +349,7 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
             readData.apply {
                 val nextIndexBean = getNextIndexBean()
                 nextPageView.bindContent(nextIndexBean.chapIndex, nextIndexBean.pageIndex)
-                callback?.onUpdatePage(
+                userCallback?.onUpdatePage(
                     nextPageView,
                     getChap(nextIndexBean.chapIndex),
                     nextIndexBean.pageIndex

@@ -15,7 +15,8 @@ private const val TAG = "DataSource"
 class ReadData : BitmapProvider {
 
     lateinit var contentConfig: ContentConfig
-    var callback: ReadViewCallback? = null
+    var userCallback: ReadViewCallback? = null
+    lateinit var viewCallBack: ReadViewCallback
 
     var book: BookData? = null
     lateinit var bookLoader: BookLoader
@@ -53,14 +54,21 @@ class ReadData : BitmapProvider {
 
     fun loadBook(): Boolean {
         return try {
-            book = bookLoader.loadBook()
-            if (book!!.isEmpty()) {
-                book!!.addChapter(ChapData(1, "无内容"))
+            val book = bookLoader.loadBook()
+            if (book.isEmpty()) {
+                book.addChapter(
+                    ChapData(1).apply {
+                        content = "内容为空"
+                    }
+                )
             }
-            callback?.onTocInitSuccess(book!!)
+            this.book = book
+            viewCallBack.onTocInitSuccess(book)
+            userCallback?.onTocInitSuccess(book)
             true
         } catch (e: Exception) {
-            callback?.onTocInitFailed(e)
+            viewCallBack.onTocInitFailed(e)
+            userCallback?.onTocInitFailed(e)
             false
         }
     }
@@ -164,10 +172,12 @@ class ReadData : BitmapProvider {
                 try {
                     bookLoader.loadChapter(chap)
                     chap.status = ChapterStatus.NO_SPLIT
-                    callback?.onLoadChap(chap, true)
+                    viewCallBack.onLoadChap(chap, true)
+                    userCallback?.onLoadChap(chap, true)
                 } catch (e: Exception) {
                     chap.status = ChapterStatus.NO_LOAD
-                    callback?.onLoadChap(chap, false)
+                    viewCallBack.onLoadChap(chap, false)
+                    userCallback?.onLoadChap(chap, false)
                 }
             }
         }
@@ -219,7 +229,8 @@ class ReadData : BitmapProvider {
                 "正在加载中..."
             )
         }
-        callback?.onBitmapCreate(bitmap)
+        viewCallBack.onBitmapCreate(bitmap)
+        userCallback?.onBitmapCreate(bitmap)
         return bitmap
     }
 

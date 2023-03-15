@@ -302,9 +302,6 @@ class ReadView(context: Context, attributeSet: AttributeSet?) :
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
         readData.bookLoader = loader
-        if (readData.userCallback == null) {        // 如果没设置回调，就不需要unite
-            readData.userCallback = this
-        }
         readData.setProcess(chapIndex, pageIndex)
         prepareInit()
         startTask {

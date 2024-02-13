@@ -1,4 +1,4 @@
-## 本项目将被重构，请移步(ReadView)[https://github.com/Peyilo/ReadView]
+## 本项目将被重构，请移步[ReadView)](https://github.com/Peyilo/ReadView)
 
 ## ReadView
 

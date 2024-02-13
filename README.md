@@ -1,3 +1,5 @@
+## 本项目将被重构，请移步(ReadView)[https://github.com/Peyilo/ReadView]
+
 ## ReadView
 
 提供一个可扩展的小说阅读界面自定义View
